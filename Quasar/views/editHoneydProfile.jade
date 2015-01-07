@@ -1,0 +1,315 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+extends layout
+block headerAdditions
+  include includes/commonHoneydProfile
+
+block content
+  div#lightbox(class='white_content', style='display:none;')
+    div#configureScript
+    
+    br
+    button#closeLB(onclick='closeLightbox()') Close
+  
+  div#setup(onclick='handleOnclick(event);', style="display: inline-block;")
+    div(style="display: none")
+      select#personalitySelect(name='personality')
+        each os in personalities
+          option(value='#{os}') #{os}
+      select#ethernetSelect(data-dojo-type='dijit.form.FilteringSelect', name='ethernet', autocomplete='true', pageSize=10)
+        each vendor in vendors
+          option(value='#{vendor}') #{vendor}
+                  
+   
+    h3.cardHeader 
+      span Profile Options
+      a(href="help#profile", target="_blank")
+        img.helpIcon(src="/images/about.png", style="float: right;")
+    div.cardOuter
+      table(id='tableEditProfile')
+        col
+        col
+        col(style='width:200px')
+        col(style='width:300px')
+        
+        tr(id='row0')
+          td
+          td
+          td(style='text-align:right')
+            label Profile Name
+          td
+            input#name(type='text', name='name')
+        
+        tr(id='row1')
+          td
+          td
+          td(style='text-align:right')
+            label Parent Profile
+          td
+            input#parentName(type='text', name='name', disabled='true')
+        
+   
+        tr(id='row2')
+          td
+            input#inheritPersonality(type='checkbox', name='inheritPersonality', onclick='inheritanceChanged()') 
+          td
+            label Inherit?
+          td(style='text-align:right')
+            label Operating System Personality
+          td
+            div
+              input#personality(style="display: inline-block")
+              span#showAllPersonalities(class="ui-button-icon-primary ui-icon ui-icon-triangle-1-s", style="display: inline-block")
+        
+        tr(id='row4')
+          td
+            input#inheritDropRate(type='checkbox', name='inheritDropRate', onclick='inheritanceChanged()') 
+          td
+            label Inherit?
+          td(style='text-align:right')
+            label Packet Drop Percentage
+          td
+            input#dropRate(type='number', name='dropRate', min=0, max=100, onblur='enforceMinAndMax("dropRate")')
+        tr
+          td
+            br
+        tr(id='row5')
+          td
+            input#inheritUptime(type='checkbox', name='inheritUptime', onclick='inheritanceChanged()') 
+          td
+            label Inherit?
+          td(style='text-align:right')
+            label Fixed uptime or range?
+          td
+            select#uptimeType(name='uptimeType', onchange='uptimeTypeChanged()')
+              option Fixed
+              option Range
+          
+        tr(id='row6')
+          td
+          td
+          td(style='text-align:right')
+            label(id='uptimeLabel') Uptime Range
+          td
+            input#uptimeMin(type='number', name='uptimeMin', min=0, onblur='enforceMinAndMax("uptimeMin")')
+            input#uptimeMax(type='number', name='uptimeMax', min=0, onblur='enforceMinAndMax("uptimeMax")')
+  
+    h3.cardHeader 
+      span Profile Ethernet Vendor Configuration
+      a(href="help#EthernetVendor", target="_blank")
+        img.helpIcon(src="/images/about.png", style="float: right;")
+    div.cardOuter
+      table#ethernetVendors
+       
+      div#ethSelectDiv
+        button.button(type='button', id='ethSelectButton', onclick='addEthernetVendor($("#ethernet").val(), 1)')
+          img.buttonIcon(src='images/add.png')
+          span.buttonSpan Add New Vendor
+
+        input#ethernet(style="display: inline-block")
+        span#showAllVendors(class="ui-button-icon-primary ui-icon ui-icon-triangle-1-s", style="display: inline-block")
+        
+      label#errorEthernet(style='color:red;', value='')
+      input#profDist(type='hidden', value='')
+   
+    h3.cardHeader
+      span Profile Broadcast Configuration
+      a(href="help#broadcasts", target="_blank")
+        img.helpIcon(src="/images/about.png", style="float: right;")
+    div.cardOuter
+      table.novaGrid(data-bind="visible: broadcasts().length > 0")
+        thead
+          tr.novaGrid
+            td.novaGrid Script
+            td.novaGrid Source Port
+            td.novaGrid Destination Port
+            td.novaGrid Time
+        tbody(data-bind="foreach: broadcasts")
+          tr.novaGrid
+            td.novaGrid
+              input(type="text", data-bind="value: script", disabled="disabled")
+            td.novaGrid
+              input(type="number", data-bind="value: srcPort")
+            td.novaGrid
+              input(type="number", data-bind="value: dstPort")
+            td.novaGrid
+              input(type="number", data-bind="value: time")
+            td.novaGrid
+              a.button(href="#", data-bind="click: $root.removeBroadcast") Delete
+
+      table
+        tr
+          td
+            span Script
+          td
+            select#bcastscript
+              each script, i in bcastScripts
+                option(value="#{script}") #{script}
+
+        tr
+          td
+              span Source Port
+          td
+            input#bcastsrcport(type="number")
+        tr
+          td
+            span Destination Port
+          td
+            input#bcastdstport(type="number")
+        tr
+          td
+            span Time
+          td
+            input#bcasttime(type="number")
+      button(onclick="addBroadcast()") Add Broadcast Script
+
+    h3.cardHeader 
+      span Profile Proxy Services
+      a(href="help#proxies", target="_blank")
+        img.helpIcon(src="/images/about.png", style="float: right;")
+    div.cardOuter
+      table.novaGrid(data-bind="visible: proxies().length > 0")
+        thead
+          tr.novaGrid
+            td.novaGrid Protocol
+            td.novaGrid Honeypot Port
+            td.novaGrid Proxy IP
+            td.novaGrid Proxy Port
+        tbody(data-bind="foreach: proxies")
+          tr.novaGrid
+            td.novaGrid
+              select(data-bind="value: protocol")
+                option tcp
+                option udp
+            td.novaGrid
+              input(type="text", data-bind="value: protocol")
+            td.novaGrid
+              input(type="number", data-bind="value: honeypotPort")
+            td.novaGrid
+              input(type="text", data-bind="value: proxyIP")
+            td.novaGrid
+              input(type="number", data-bind="value: proxyPort")
+            td.novaGrid
+              a.button(href="#", data-bind="click: $root.removeProxy") Delete
+      table
+        tr
+          td
+            span Protocol
+          td
+            select#proxyProtocol
+              option tcp
+              option udp
+        tr
+          td
+            span Honeypot Port
+          td
+            input#honeypotPort(type="number")
+        tr
+          td
+            span Proxy IP
+          td
+            input#proxyIP(type="text")
+        tr
+          td
+            span Proxy Port
+          td
+            input#proxyPort(type="number")
+      button(onclick="addProxy()") Add Proxy Service
+              
+                
+
+    h3.cardHeader
+      span Profile Port Configuration
+      a(href="help#portConfiguration", target="_blank")
+        img.helpIcon(src="/images/about.png", style="float: right;")
+    div.cardOuter
+      table
+        tr
+          td
+            label Create New Port Set
+          td
+            div(style="width: 100px")
+          td
+            button(type='button', onclick = 'addNewPortset()')
+              img.buttonIcon(src='images/add.png')
+              span.buttonSpan Add Portset
+
+        tr
+          td
+            label Edit Port Set
+          td
+            select#portSetSelection(onchange='portSetSelectionChanged()', style='width: 95%')
+          td
+            button(type='button', onclick = 'deletePortset()')
+              img.buttonIcon(src='images/delete.png')
+              span.buttonSpan Delete Portset
+      
+      br
+      br
+      div#portSetDiv
+        table
+          tr
+            td
+              label Default TCP Action
+             td
+               select#defaultTCPAction(style='width: 100%')
+                 option(value='filtered') Filtered (don't respond)
+                 option(value='open') Open (respond with SYN/ACK)
+                 option(value='closed') Closed (respond with RST)
+
+           tr
+             td
+               label Default UDP Action
+             td
+               select#defaultUDPAction(style='width: 100%')
+                 option(value='filtered') Filtered (don't respond)
+                 option(value='closed') Closed (respond with ICMP port unreach)
+           tr
+             td
+               label Default ICMP Action
+             td
+               select#defaultICMPAction(style='width: 100%')
+                 option(value='filtered') Filtered (don't respond)
+                 option(value='open') Open (respond to pings)
+   
+
+        h3 Service Configuration
+        table#portTable
+          thead
+            td Service
+            td Script
+            td Port
+            td Protocol
+            td Advanced
+            td Delete
+          tbody#portTableBody
+   
+        br
+        button(type='button', onClick='addPort()')
+          img.buttonIcon(src='images/add.png')
+          span.buttonSpan Add New Service
+     
+      br
+      br
+      div(style="text-align: center")
+        button(type='button', onclick='saveChanges()')
+          img.buttonIcon(src='images/ok.png')
+          span.buttonSpan Save Changes
+        
+        button(type='button', onclick='window.location="/honeydConfigManage?tab=settingsProfiles"')
+          img.buttonIcon(src='images/cancel.png')
+          span.buttonSpan Cancel

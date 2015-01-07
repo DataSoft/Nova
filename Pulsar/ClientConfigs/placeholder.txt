@@ -1,0 +1,2 @@
+This folder will contain the NOVAConfig.txt files from all Quasars that have 
+connected to the Pulsar at one point or another

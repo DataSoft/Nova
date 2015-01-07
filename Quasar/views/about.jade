@@ -1,0 +1,41 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+extends layout
+block content
+  div.contentBox(style='text-align:center; font-size:17px')
+    h1 Nova !{version} (by 
+      a(href='http://www.datasoft.com/') Datasoft
+      | )
+    
+    p Nova is an Open Source 
+      a(href='license.txt') (GPL)
+      |  software application for preventing and detecting hostile Network Reconnaissance. It does this by first creating a large array of thin virtual machines on the target network (known as the Haystack). Nova then uses machine learning algorithms to automatically detect and classify attempts at hostile reconnaissance, so there's no need to go searching manually through your honeypot's log files.
+
+    br
+
+    h1 Contributors
+    ul(style='padding-left: 30px; text-align: left; display:inline-block; margin: 0')
+      li Addison Waldow (Awal)
+      li Dan Petro (AltF4)
+      li Dave Scott (SythASU)
+      li David Clark (Pherricoxide)
+      li Rami Rashid (Romstar)
+      li Robert Thompson (Ace)
+      li Sarah Harvey (sharvey)
+    a(href='http://projectnova.org')
+      h1 Project Webpage
+

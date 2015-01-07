@@ -1,0 +1,203 @@
+* {
+  outline: none !important;
+}
+
+#suspectTable {
+	table-layout:fixed;
+	border-collapse:collapse;
+	border: 1px solid black;
+}
+
+#suspectTable td, #suspectTable th 
+{
+	font-size:1em;
+	border:1px solid #d0e9fc;
+	padding:3px 7px 2px 7px;
+	text-align:center;
+}
+
+#suspectTable th 
+{
+	font-size:1.1em;
+	text-align:center;
+	padding-top:5px;
+	padding-bottom:4px;
+	background-color: #d0e9fc;
+	border: 1px solid black;
+}
+
+body {
+  margin: 0;
+  padding: 2em;
+  font-family: Lucida Sans,Lucida Grande,Arial !important;
+  font-size: 13px !important;
+  background: white;
+  color: #333;
+}
+
+p {
+	font-family:Consolas,Menlo,"Liberation Mono",Courier,monospace;
+}
+
+button {
+  -webkit-transition: background-color 0.2s linear;
+  border-radius:4px;
+  -moz-border-radius: 4px 4px 4px 4px;
+  -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+  background-color: #E4F2FF;
+  background-position: center top;
+  background-repeat: repeat-x;
+  border: 1px solid #769DC0;
+  padding: 2px 8px 4px;
+  font-size:1em;
+}
+
+div.sideBarHeader {
+  dislay: block;
+  text-align: center;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+input[type=button], input[type=submit], button, .button, .sideBarButton {
+  font-size:13px;
+  background-color: #E4F2FF;
+  border: 1px solid #769DC0;
+  border-radius:4px;
+  padding: 2px 4px 4px;
+  text-align: center;
+  text-decoration: none;
+  color: black;
+  margin-left: 2px;
+  margin-right: 2px;
+}
+
+.sideBarButton {
+  width: 135px;
+  display:block;
+}
+
+.active {
+  background-color: #E8A02F;
+}
+
+.sideBarButton, .button:link{color: black;}
+.sideBarButton, .button:visited {color:black;}
+
+input[type=button]:hover, input[type=submit]:hover, .sideBarButton:hover, button:hover, .button:hover {
+  background-color: #AFD9FF;
+  color: #000000;
+}
+
+.button {
+  border-radius:4px;
+  background-color: #E4F2FF;
+  background-position: center top;
+  background-repeat: repeat-x;
+  border: 1px solid #769DC0;
+  padding: 2px 4px 4px;
+  font-size:1em;
+	width: 135px;
+	text-align: center;
+	text-decoration: none;
+	display:inline-block;
+}
+
+.button:link { color: black;}
+.button:visited {color:black;}
+.button:hover {color:green;}
+.button:active {color:green;}
+
+input, span {
+  -webkit-transition: background-color 0.2s linear;
+  border-radius:4px;
+  -moz-border-radius: 4px 4px 4px 4px;
+  -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+  background-color: #E4F2FF;
+  background-position: center top;
+  background-repeat: repeat-x;
+  border: 1px solid #769DC0;
+  padding: 2px 8px 4px;
+  font-size:1em;
+}
+
+button:hover {
+  background-color: #AFD9FF;
+  color: #000000;
+}
+
+h1 {
+  font-size:1.5em;
+}
+
+h2 {
+  font-size:1.2em;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  padding: 0;
+}
+ 
+#appLayout {
+  height: 100%;
+}
+#leftCol {
+  width: 12em;
+}
+
+.claro .demoLayout .edgePanel {
+  background-color: #d0e9fc;
+}
+
+#viewsChart {
+  width: 550px;
+  height: 550px;
+}
+
+#clientsList {
+  border: 2px solid;
+  background: #E8A02F;
+  width: 250px;
+  text-align: center;
+}
+
+#groupsList {
+  border: 2px solid;
+  background: #E8A02F;
+  width: 250px;
+  text-align: center;
+}
+
+#connectionsList {
+  border: 2px solid black;
+  border-radius: 4px;
+  background: #E8A02F;
+  width: inherit;
+  text-align: center;
+}
+
+.listContainer {
+  background: #E8A02F;
+  border: 2px solid; 
+  width: 200px;
+}
+
+.white_content {
+	display: none;
+	position: absolute;
+	top: 5%;
+	left: 0%;
+	width: 75%;
+	height: 80%;
+	padding: 16px;
+	border: 16px outset #E8A02F;
+	background-color: white;
+	z-index: 1002;
+	overflow: hidden;
+	overflow-y: scroll;
+}
+
+.align-left {float:left; margin: 0 15px 15px 0;}

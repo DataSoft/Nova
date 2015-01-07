@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/grid"
+    android:background="#E4F2FF"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+    <TextView
+        android:id="@+id/suspectIpString"
+        android:layout_width="fill_parent"
+    	android:layout_height="40dp"
+    	android:text="@+id/suspectIpString"
+    	android:layout_marginRight="5dp"
+    	android:layout_marginTop="2dp"
+    	android:layout_marginBottom="2dp"
+    	android:textSize="14sp"
+    	android:layout_weight="2"
+    	android:gravity="center" />
+    <TextView
+        android:id="@+id/suspectIfaceString"
+        android:layout_width="fill_parent"
+    	android:layout_height="40dp"
+    	android:text="@+id/suspectIfaceString"
+    	android:layout_marginRight="5dp"
+    	android:layout_marginTop="2dp"
+    	android:layout_marginBottom="2dp"
+    	android:textSize="16sp"
+    	android:layout_weight="3"
+    	android:gravity="center" />
+    <com.datasoft.ceres.TextProgressBar
+        android:id="@+id/suspectClass"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:progressDrawable="@drawable/progressbar"
+        android:layout_width="fill_parent"
+    	android:layout_height="fill_parent"
+    	android:text="@+id/suspectClass"
+    	android:layout_weight="2"
+    	android:max="100" />
+</LinearLayout>

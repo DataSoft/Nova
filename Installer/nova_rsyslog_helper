@@ -1,0 +1,67 @@
+#!/bin/bash
+
+TARGET_IP=$1
+TARGET_PORT=$2
+TARGET_CONNTYPE=$3
+TARGET=$TARGET_IP:$TARGET_PORT
+FILE=/usr/share/nova/sharedFiles/41-nova.conf
+NOT_IP=^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\:[1-9]{1}[0-9]{0,4}$
+
+if [[ -z $TARGET ]]
+then
+{
+  echo 'Usage: nova_rsyslog_helper (TARGET_IP:TARGET_PORT|remove)'
+  exit 1
+}
+fi
+if [[ $TARGET =~ $NOT_IP ]]
+then
+{
+  echo "Matched" >/dev/null
+}
+else
+{
+  if [[ "$TARGET_IP" -eq "remove" ]]
+  then
+  {
+     echo 'in rm call'
+     rm -f '/etc/rsyslog.d/41-nova.conf'
+     sudo restart rsyslog
+     exit 0
+  }
+  else
+  {
+     echo 'Usage: nova_rsyslog_helper (TARGET_IP:TARGET_PORT|remove)'
+     exit 1
+  }
+  fi
+}
+fi
+
+sudo cp $FILE /etc/rsyslog.d/
+
+FILE=/etc/rsyslog.d/41-nova.conf
+
+echo $TARGET
+echo $TARGET_CONNTYPE
+
+if grep -qs "CHANGEME" $FILE
+then
+{
+  if [[ "$TARGET_CONNTYPE" == "TCP" ]]
+  then
+  {
+    echo "TCONNTYPE was TCP"
+    sed -i "s|CHANGEME|@@$TARGET|g" $FILE
+  }
+  else
+  {
+    echo "TCONNTYPE was UDP"
+    sed -i "s|CHANGEME|@$TARGET|g" $FILE
+  }
+  fi
+}
+fi
+
+sudo restart rsyslog
+exit 0

@@ -1,0 +1,187 @@
+#!/usr/bin/python
+
+import os, sys
+import smtplib, csv, subprocess
+import datetime
+import argparse
+
+from smtplib import SMTPException
+from smtplib import SMTPAuthenticationError
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEBase import MIMEBase
+from email.MIMEText import MIMEText
+from email.MIMEImage import MIMEImage
+from email.Utils import COMMASPACE, formatdate
+from email import Encoders
+
+SERVER = ''
+PORT = ''
+FROM = ''
+TO = ''
+PASS = ''
+SMTP_USEAUTH = 0
+
+parser = argparse.ArgumentParser(description='Test NOVA SMTP settings')
+parser.add_argument('-s', '--server', dest='SERVER', required=True, help='SMTP server to attempt to send through')
+parser.add_argument('-p', '--port', dest='PORT', required=True, help='Port to send through, defaults to 465', default=465)
+parser.add_argument('-f', '--from-email', dest='FROM', required=True, help='Sender email')
+parser.add_argument('-t', '--to-email', dest='TO', nargs='+', required=True, help='Receiving email or list of recipients')
+parser.add_argument('-x', '--pass', dest='PASS', required=True, help='Password for --from-email account')
+parser.add_argument('-a', '--starttls', dest='AUTH', required=True, help='whether to attempt STARTTLS or not')
+args = parser.parse_args(sys.argv[1:])
+
+SERVER = args.SERVER
+PORT = args.PORT
+FROM = args.FROM
+TO = ', '.join(args.TO)
+PASS = args.PASS.replace('/', '')
+SMTP_USEAUTH = args.AUTH
+
+def is_number(s):
+  try:
+    float(s)
+    return True
+  except ValueError:
+    return False
+
+def prettify(s):
+  while len(s) > 7:
+    s = s[0:len(s) - 1]
+  return s
+
+DEBUG = 1
+INFO = 0
+NOTICE = 0
+WARNING = 0
+ERROR = 0
+CRITICAL = 0
+ALERT = 0
+EMERGENCY = 0
+
+def genMessageContentsText():
+  ret = 'In this email alert, there are:\n'
+  if DEBUG != 0:
+    ret += str(DEBUG)  + ' DEBUG log messages\n'
+  if INFO != 0:
+    ret += str(INFO)  + ' INFO log messages\n'
+  if NOTICE != 0:
+    ret += str(NOTICE)  + ' NOTICE log messages\n'
+  if WARNING != 0:
+    ret += str(WARNING)  + ' WARNING log messages\n'
+  if ERROR != 0:
+    ret += str(ERROR)  + ' ERROR log messages\n'
+  if CRITICAL != 0:
+    ret += str(CRITICAL)  + ' CRITICAL log messages\n'
+  if ALERT != 0:
+    ret += str(ALERT)  + ' ALERT log messages\n'
+  if EMERGENCY != 0:
+    ret += str(EMERGENCY)  + ' EMERGENCY log messages\n'
+  return ret
+
+def genMessageContentsHTML():
+  ret = ''
+  for line in open('/usr/share/nova/sharedFiles/email_template.txt', 'r').readlines():
+    ret += line
+  replacewith = ''
+  if DEBUG != 0:
+    replacewith += '<li>' + str(DEBUG)  + ' DEBUG log messages</li>\n'
+  if INFO != 0:
+    replacewith += '<li>' + str(INFO)  + ' INFO log messages</li>\n'
+  if NOTICE != 0:
+    replacewith += '<li>' + str(NOTICE)  + ' NOTICE log messages</li>\n'
+  if WARNING != 0:
+    replacewith += '<li>' + str(WARNING)  + ' WARNING log messages</li>\n'
+  if ERROR != 0:
+    replacewith += '<li>' + str(ERROR)  + ' ERROR log messages</li>\n'
+  if CRITICAL != 0:
+    replacewith += '<li>' + str(CRITICAL)  + ' CRITICAL log messages</li>\n'
+  if ALERT != 0:
+    replacewith += '<li>' + str(ALERT)  + ' ALERT log messages</li>\n'
+  if EMERGENCY != 0:
+    replacewith += '<li>' + str(EMERGENCY)  + ' EMERGENCY log messages</li>\n'
+  ret = ret.replace('LISTHERE', replacewith)
+  return ret
+
+def peelSettings(settings):
+  return settings[1].split('\n')[1:]
+
+def sendEmailAlert():
+  data = subprocess.check_output(['novacli', 'get', 'all', 'csv'])
+
+  csvfile = open(os.environ['HOME'] + '/.config/nova/config/snapshot.txt', 'w')
+  csvfile.write(data)
+  csvfile.close()
+
+  csvfile = open(os.environ['HOME'] + '/.config/nova/config/snapshot.txt', 'r')
+
+  output = ''
+
+  with csvfile as csvdata:
+    reader = csv.reader(csvdata, delimiter=',')
+    for row in reader:
+      for index in row:
+        temp = index
+        if is_number(index):
+          temp = prettify(temp)
+        output = output + str(temp) + '\t'
+      output = output + '\n'
+
+  csvfile.close()
+
+  csvfile = open(os.environ['HOME'] + '/.config/nova/config/snapshot.txt', 'w')
+  csvfile.write(output)
+  csvfile.close()
+
+  MSG = MIMEMultipart('mixed')
+  MSG['Subject'] = 'Nova Email Alert'
+  MSG['Date'] = formatdate(localtime=True)
+  MSG['From'] = FROM
+  MSG['To'] = TO
+  MSG.preamble = 'Nova Email Alert'
+  sumcheck = DEBUG + INFO + NOTICE + WARNING + ERROR + CRITICAL + ALERT + EMERGENCY
+  if sumcheck == 0:
+    print 'Nothing in attachment.txt, exiting'
+    sys.exit(0)
+  
+  sub = MIMEMultipart('alternative')
+  sub.attach(MIMEText(genMessageContentsText(), 'plain'))
+  sub.attach(MIMEText(genMessageContentsHTML(), 'html'))
+  MSG.attach(sub)
+
+  part = MIMEText(open(os.environ['HOME'] + '/.config/nova/config/snapshot.txt', 'r').read(), 'plain')
+  part.add_header('Content-Disposition', 'attachment', filename='snapshot' + datetime.datetime.now().strftime("%Y%m%d%H%M") + '.txt')
+  MSG.attach(part)
+
+  msgImage = MIMEImage(open('/usr/share/nova/sharedFiles/icons/nova-icon.png', 'rb').read())
+  msgImage.add_header('Content-ID', '<novaicon>')
+  MSG.attach(msgImage)
+
+  server = smtplib.SMTP(SERVER, PORT)
+  server.set_debuglevel(0)
+  settings = peelSettings(server.ehlo())
+
+  if SMTP_USEAUTH == '1' and 'STARTTLS' in settings:
+    try:
+      server.starttls()
+    except SMTPException as e:
+      print e
+  if len(PASS) != 0 and 'AUTH LOGIN PLAIN' in settings:
+    try:
+      server.login(FROM, PASS)
+    except SMTPAuthenticationError as e:
+      print e
+    except SMTPException as e:
+      print e
+  try:
+    server.sendmail(FROM, TO.split(', '), MSG.as_string())
+    server.quit()
+    
+  except Exception as e:
+    print e
+
+if SERVER == '' or PORT == '' or FROM == '' or TO == '':
+  print 'One or more of the required SMTP variables (SERVER, PORT, FROM, TO) was not successfully retrieved.'
+  sys.exit(2)
+
+sendEmailAlert()
+

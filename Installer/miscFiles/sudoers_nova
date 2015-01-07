@@ -1,0 +1,17 @@
+# /etc/sudoers
+#
+# This file MUST be edited with the 'visudo' command as root.
+#
+# See the man page for details on how to write a sudoers file.
+#
+
+# Host alias specification
+
+# User alias specification
+
+# Cmnd alias specification
+Cmnd_Alias NOVACMNDS = /sbin/route, /sbin/iptables, /bin/kill, /usr/bin/honeyd, /usr/bin/pkill, /usr/bin/nova_rsyslog_helper, /sbin/start haystack, /sbin/stop haystack, /sbin/start novad, /sbin/stop novad, /usr/bin/placenovasendmail, /usr/bin/cleannovasendmail.sh
+# User privilege specification
+
+Defaults!NOVACMNDS exempt_group=nova
+

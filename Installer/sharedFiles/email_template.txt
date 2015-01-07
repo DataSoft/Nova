@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Nova SMTP Message</title>
+  </head>
+  <body style="background: #E4F2FF;">
+    <div style="display: inline-block;">
+        <img src="cid:novaicon" alt="Nova Icon" height="64" width="64" style="float: left;"></img>
+        <p style="font-size: 24px; font-weight: bold; float: left; margin-left: 20px;">Nova</p>        
+    </div>
+    <div>
+      <p style="font-size: 16px; font-weight: bold;">In this email alert, there are:</p>
+      <ul style="border: 2px solid #E4F2FF; list-style-type: none;">
+      LISTHERE
+      </ul>
+    </div>
+  </body>
+</html>

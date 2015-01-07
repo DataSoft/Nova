@@ -1,0 +1,74 @@
+AC_PREREQ([2.68])
+AC_INIT([NOVA], [])
+AC_CONFIG_SRCDIR([Novad/src/Main.cpp])
+AC_CONFIG_HEADERS([config.h])
+
+# Checks for programs.
+#AC_PROG_CXX
+#AC_PROG_CC
+#AC_PROG_LN_S
+#AC_PROG_MAKE_SET
+
+
+function foundLibFailed {
+	AC_MSG_NOTICE([])
+	AC_MSG_NOTICE([])
+	AC_MSG_ERROR([!ERROR! Cannot find library '$1'. Please attempt to solve this problem !ERROR!])
+}
+
+function foundProgramFailed {
+	AC_MSG_NOTICE([])
+	AC_MSG_NOTICE([])
+	AC_MSG_ERROR([!ERROR! Cannot find program '$1' in your PATH. Please install it and add it to your PATH variable before going on !ERROR!]) 	
+}
+
+
+
+AC_CHECK_PROG(HAS_IPTABLES, iptables, iptables)
+if test -z "$HAS_IPTABLES"; then
+	foundProgramFailed "iptables"
+fi
+
+AC_CHECK_PROG(HAS_SETCAP, setcap, setcap)
+if test -z "$HAS_SETCAP"; then
+	foundProgramFailed "setcap"
+fi
+
+AC_CHECK_PROG(HAS_SQLITE3, sqlite3, sqlite3)
+if test -z "$HAS_SQLITE3"; then
+	foundProgramFailed "sqlite3"
+fi
+
+
+# Checks for libraries.
+AC_CHECK_LIB([pcap], [pcap_create], [], [foundLibFailed 'pcap'])
+AC_CHECK_LIB([ann], [main], [], [foundLibFailed 'ann'])
+AC_CHECK_LIB([pthread], [pthread_create], [], [foundLibFailed 'pthread'])
+AC_CHECK_LIB([curl], [curl_easy_init], [], [foundLibFailed 'curl'])
+
+# Check for boost
+m4_include([m4/ax_boost_base.m4])
+m4_include([m4/ax_boost_program_options.m4])
+m4_include([m4/ax_boost_serialization.m4])
+AX_BOOST_BASE(1.42)
+AX_BOOST_PROGRAM_OPTIONS
+AX_BOOST_SERIALIZATION
+
+# Checks for header files.
+#AC_CHECK_HEADERS([arpa/inet.h netinet/in.h sys/file.h sys/ioctl.h sys/socket.h sys/time.h syslog.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+#AC_HEADER_STDC
+#AC_C_INLINE
+#AC_TYPE_INT32_T
+#AC_TYPE_SIZE_T
+#AC_TYPE_UINT16_T
+#AC_TYPE_UINT32_T
+#AC_TYPE_UINT64_T
+#AC_TYPE_UINT8_T
+
+# Checks for library functions.
+#AC_FUNC_MALLOC
+#AC_CHECK_FUNCS([inet_ntoa])
+
+AC_OUTPUT

@@ -1,0 +1,42 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+extends layout
+
+block headerAdditions
+  link(rel='stylesheet', name='text/css', href='configstyle.css', media='screen')
+  
+block content
+  div
+    form(method='post', action='/importCaptureSave?trainingSession=#{trainingSession}')
+      table(border = '1')
+        thead
+          tr
+            th Include?
+            th Hostile?
+            th UID
+            th Description
+        tbody
+          - for (var i = 0; i < ips.length; i++)
+            tr
+              td
+                input(type='checkbox', style='width:12px;', name='include_#{ips[i]}', value='1', checked)
+              td
+                input(type='checkbox', style='width: 12px', name='hostile_#{ips[i]}', value='1', checked)
+              td #{ips[i]}
+              td
+                input(type='text', name='description_#{ips[i]}', value='')
+      input(type='Submit', value='Confirm Training Data Selection')

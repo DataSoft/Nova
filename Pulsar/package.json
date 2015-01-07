@@ -1,0 +1,17 @@
+{
+	"name": "pulsar",
+	"description": "Remote management and information interface for Nova.",
+	"version": "0.0.1",
+	"dependencies": {
+		"express": "2.5.x",
+		"now": "0.8.x",
+		"jade": "0.25.x",
+		"passport": "0.1.x",
+		"passport-http": "",
+		"sqlite3": "",
+		"websocket": "1.x.x",
+		"socket.io": "0.9.10",
+		"node-schedule":"",
+		"ncp":""
+	}
+}

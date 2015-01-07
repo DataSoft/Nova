@@ -1,0 +1,75 @@
+package Nova;
+
+message SuspectID_pb
+{
+	optional uint32 m_IP = 1;
+	optional string m_ifname = 2;
+}
+
+enum MessageType
+{
+	CONTROL_EXIT_REQUEST = 0;
+	CONTROL_EXIT_REPLY = 1;
+	CONTROL_CLEAR_ALL_REQUEST = 2;
+	CONTROL_CLEAR_ALL_REPLY = 3;
+	CONTROL_CLEAR_SUSPECT_REQUEST = 4;
+	CONTROL_CLEAR_SUSPECT_REPLY = 5;
+	CONTROL_SAVE_SUSPECTS_REQUEST = 6;
+	CONTROL_SAVE_SUSPECTS_REPLY = 7;
+	CONTROL_RECLASSIFY_ALL_REQUEST = 8;
+	CONTROL_RECLASSIFY_ALL_REPLY = 9;
+	CONTROL_START_CAPTURE = 10;
+	CONTROL_START_CAPTURE_ACK = 11;
+	CONTROL_STOP_CAPTURE = 12;
+	CONTROL_STOP_CAPTURE_ACK = 13;
+	CONTROL_INVALID = 14;
+
+	REQUEST_SUSPECTLIST = 16;
+	REQUEST_SUSPECTLIST_REPLY = 17;
+	REQUEST_SUSPECT = 18;
+	REQUEST_SUSPECT_REPLY = 19;
+	REQUEST_ALL_SUSPECTS = 20;
+	REQUEST_ALL_SUSPECTS_REPLY = 21;
+	REQUEST_UPTIME = 22;
+	REQUEST_UPTIME_REPLY = 23;
+	REQUEST_PING = 24;
+	REQUEST_PONG = 25;
+
+	UPDATE_SUSPECT = 26;
+	UPDATE_SUSPECT_ACK = 27;
+	UPDATE_ALL_SUSPECTS_CLEARED = 28;
+	UPDATE_ALL_SUSPECTS_CLEARED_ACK = 29;
+	UPDATE_SUSPECT_CLEARED = 30;
+	UPDATE_SUSPECT_CLEARED_ACK = 31;
+
+	CONNECTION_SHUTDOWN = 32;
+};
+
+enum SuspectFeatureMode
+{
+	NO_FEATURE_DATA = 0;
+	UNSENT_FEATURE_DATA = 1;
+	MAIN_FEATURE_DATA = 2;
+	ALL_FEATURE_DATA = 3;
+};
+
+enum SuspectListType
+{
+	SUSPECTLIST_ALL = 0;
+	SUSPECTLIST_HOSTILE = 1;
+	SUSPECTLIST_BENIGN = 2;
+};
+
+message Message_pb
+{
+	required MessageType m_type = 1;
+	optional int32 m_messageID = 2;
+	optional uint32 m_sessionIndex = 3;
+	optional string m_filePath = 4;
+	optional bool m_success = 5;
+	optional SuspectID_pb m_suspectID = 6;
+	repeated SuspectID_pb m_suspectIDs = 7;
+	optional SuspectListType m_listType = 8;
+	optional uint32 m_startTime = 9;
+	optional SuspectFeatureMode m_featureMode = 10;
+}

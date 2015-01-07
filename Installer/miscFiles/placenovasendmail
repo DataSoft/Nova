@@ -1,0 +1,44 @@
+#!/bin/bash
+
+INTERVAL=""
+
+if [ $# -eq 1 ]
+then
+	INTERVAL=$1
+else
+	echo "usage: placenovasendmail (hourly|daily|weekly|monthly)"
+	echo "No interval specified, exiting"
+	exit 1
+fi
+
+if [[ "$INTERVAL" == "hourly" ]]; then
+	INTERVAL="0 * * * *"
+elif [[ "$INTERVAL" == "daily" ]]; then
+	INTERVAL="0 0 * * *"
+elif [[ "$INTERVAL" == "weekly" ]]; then
+	INTERVAL="0 0 * * fri"
+elif [[ "$INTERVAL" == "monthly" ]]; then
+	INTERVAL="0 0 28 * *"
+else 
+	echo "Interval not one of (hourly|daily|weekly|monthly), exiting"
+	exit 1
+fi
+
+SCRIPT="novasendmail"
+CRONSTRING="$INTERVAL $SCRIPT"
+if [ "`crontab -l | grep $SCRIPT`" \> " " ]; then
+	CT="$(set -f; crontab -l | grep $SCRIPT)"
+	echo "CT is " "$CT"
+	echo "CRONSTRING is " "$CRONSTRING"
+	if [[ "$CT" == "$CRONSTRING" ]]; then
+		echo "No change required"
+	else
+		echo "changing $CT to $CRONSTRING"
+		CT=$(sed 's/[\*\.&]/\\&/g' <<<"$CT")
+		CRONSTRING=$(sed 's/[\*\.&]/\\&/g' <<<"$CRONSTRING")
+		crontab -l | sed "s%$CT%$CRONSTRING%" | (crontab)
+	fi
+else
+	echo "adding $CRONSTRING to crontab"
+	(crontab -l ; echo "$CRONSTRING") | (crontab)
+fi

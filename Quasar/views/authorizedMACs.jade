@@ -1,0 +1,32 @@
+include mixins/headers.jade
+
+extends layout
+
+block headerAdditions
+  script.
+    var viewModel = {};
+    viewModel.MACs = JSON.parse('!{authorizedMACs}');
+
+    function init() {
+      ko.applyBindings(viewModel);
+    }
+
+block content
+  +headerWithHelp("Authorized MAC Addresses", "authorizedMACs")
+    form(action="/editAuthorizedMACs", method="post",  enctype="multipart/form-data")
+      span File should contain newline seperated list of authorized MACs. Lines beginning with "#" are comments and will be ignored.
+      br
+      input(type="file", name="MACs")
+      br
+      input(type="submit", value="Submit new authorized MAC list ")
+    br
+    br
+    span(data-bind="visible: MACs.length != 0") Currently authorized MAC addresses
+    span(data-bind="visible: MACs.length == 0") There are currently no authorized MAC addresses.
+    table(style="border-collapse: collapse;")
+      tbody(data-bind="foreach: MACs")
+        tr
+          td(data-bind="text: $data", style="border: 1px solid black")
+        
+    
+

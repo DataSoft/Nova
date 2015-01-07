@@ -1,0 +1,394 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+extends layout
+
+block content
+  div.contentBox(style="display: inline-block")
+    h1 Watching Nova Log
+      a(href="help#viewLogs", target="_blank")
+        img.helpIcon(src="/images/about.png", style="float: right;");
+    p
+      a.button(href="/downloadNovadLog.log")
+        img.buttonIcon(src="images/save.png")
+        span.buttonSpan Download Entire Log
+    input#showAdvanced(type="checkbox", onchange="showAdvancedChanged()")
+    label Show Debugging Information
+    br
+    span#logTable(style="display: inline-block;")
+    p#rawLog(style="display: none")= log
+    br
+    button#filterOptions(onclick="showFilterOptions()")
+      img.buttonIcon(src="images/edit.png")
+      span.buttonSpan Filtering Options
+    br
+    br
+    div#filterDiv(style='display: none; margin-left: 20px;')
+      label(style='font-weight: bold;') Checked options will be shown in grid:
+      br
+      br
+      input#debug(type='checkbox', checked=true)
+      label DEBUG
+      br
+      input#info(type='checkbox', checked=true) 
+      label INFO
+      br
+      input#notice(type='checkbox', checked=true)
+      label NOTICE
+      br
+      input#warning(type='checkbox', checked=true)
+      label WARNING
+      br
+      input#error(type='checkbox', checked=true)
+      label ERROR
+      br
+      input#critical(type='checkbox', checked=true)
+      label CRITICAL
+      br
+      input#alert(type='checkbox', checked=true)
+      label ALERT
+      br
+      input#emergency(type='checkbox', checked=true)
+      label EMERGENCY
+      br
+      br
+      button(onclick='applyLevelFilter()')
+        img.buttonIcon(src="images/benign.png")
+        span.buttonSpan Apply Advanced Filters
+
+  br
+  div.contentBox(style="display: inline-block")
+    h1 Watching Honeyd Log
+      a(href="help#viewLogs", target="_blank")
+        img.helpIcon(src="/images/about.png", style="float: right;");
+    p
+      a.button(href="/downloadHoneydLog.log")
+        img.buttonIcon(src="images/save.png")
+        span.buttonSpan Download Entire Log
+    input#showAdvancedHoneyd(type="checkbox", onchange="showAdvancedHoneydChanged()")
+    label Show Debugging Information
+    br
+    span#honeydLogTable(style="display: inline-block;")
+    p#rawHoneydLog(style="display: none")= honeydLog
+    
+block headerAdditions
+  link(rel="stylesheet", type="text/css", href="novagrid.css", media="screen")
+  script(type="text/javascript", src="scripts/NovaGrid.js")
+
+  style(type="text/css").
+    td.novaGrid {
+      text-align: left;
+    }
+  
+    .exCollItem {
+      float: right; 
+      width: 20px;
+      height: 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      text-align: center;
+      text-shadow: 1px 0px #BBBBBB;
+      font-size: 16px;
+    }
+  
+  script.
+    var logGrid;
+    var honeydLogGrid;
+    var exCollIdx = 0;
+    var exCollVals = [];
+    var novaGridHeightCalculated = 0;
+    var allowedLevels = ['DEBUG','INFO','NOTICE','WARNING','ERROR','CRITICAL','ALERT','EMERGENCY'];
+    
+    function showAdvancedChanged()
+    {
+        var temp = novaGridHeightCalculated;
+        novaGridHeightCalculated = (26 + (25 * 18));
+        if($('#showAdvanced').is(':checked'))
+        {
+            logGrid.m_columns[2].isDisabled = false;
+            logGrid.m_columns[4].isDisabled = false;
+            logGrid.m_columns[5].isDisabled = false;
+        } 
+        else 
+        {
+            logGrid.m_columns[2].isDisabled = true;
+            logGrid.m_columns[4].isDisabled = true;
+            logGrid.m_columns[5].isDisabled = true;
+        }
+
+        logGrid.GenerateTableHeader();
+        logGrid.Render();
+        if(novaGridHeightCalculated < temp)
+        {
+          novaGridHeightCalculated = temp;
+        }
+        $('#logTable :first-child').first().css({'min-height':novaGridHeightCalculated});
+    }
+    
+    function showFilterOptions()
+    {
+      if($('#filterDiv').css('display') == 'none')
+      {
+        $('#filterDiv').css('display', 'block');
+      }
+      else
+      {
+        $('#filterDiv').css('display', 'none');
+      }
+    }
+    
+    function isIn(item, array)
+    {
+      for(i in array)
+      {
+        if(array[i] == item)
+        {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    var index = 0;
+    function AddLogEntry(line)
+    {
+      line = line.replace(/ +(?= )/g, '');
+      var match = line.match(/(\S+ \S+ \S+) ([^:]+): (\S+) File (.+) at line (\d+): (.*)/);
+
+      if(match != null)
+      {
+        match.splice(0, 1, Number(index));
+        index++;
+        
+        if(isIn(match[3], allowedLevels))
+        {
+          
+          switch (match[3])
+          {
+              case "DEBUG":
+              case "INFO":
+              case "NOTICE":
+                  match.style = "background-color: #99FF99";
+                  break;
+              case "ERROR":
+              case "CRITICAL":
+                  match.style = "background-color: #FF9999";
+                  break;
+              case "WARNING":
+                  match.style = "background-color: orange";
+                  break;
+              case "ALERT":
+              case "EMERGENCY":
+                  match.style = "background-color: #9999FF";
+                  break;
+          }
+          logGrid.PushEntry(match);
+        }
+      }
+      else 
+      {
+          console.log("No match for entry '" + line + "'");
+      }
+    }
+
+    function applyLevelFilter()
+    {
+      index = 0;
+      logGrid.Clear();
+      var temp = novaGridHeightCalculated;
+      novaGridHeightCalculated = (26 + (25 * 18));
+      allowedLevels = [];
+      
+      if($('#debug').is(':checked'))
+      {
+        allowedLevels.push('DEBUG');
+      }
+      if($('#info').is(':checked'))
+      {
+        allowedLevels.push('INFO');
+      }
+      if($('#notice').is(':checked'))
+      {
+        allowedLevels.push('NOTICE');
+      }
+      if($('#warning').is(':checked'))
+      {
+        allowedLevels.push('WARNING');
+      }
+      if($('#error').is(':checked'))
+      {
+        allowedLevels.push('ERROR');
+      }
+      if($('#critical').is(':checked'))
+      {
+        allowedLevels.push('CRITICAL');
+      }
+      if($('#alert').is(':checked'))
+      {
+        allowedLevels.push('ALERT');
+      }
+      if($('#emergency').is(':checked'))
+      {
+        allowedLevels.push('EMERGENCY');
+      }
+      
+      var log = $('#rawLog').html();
+      var parseLog = log.toString().split(/\r\n|\n\r|\n|\r/);
+      
+      for(var i in parseLog)
+      {
+          line = String(parseLog[i]);
+          AddLogEntry(line);
+      }
+      
+      logGrid.Render();
+      if(novaGridHeightCalculated < temp)
+      {
+        novaGridHeightCalculated = temp;
+      }
+      $('#logTable :first-child').first().css({'min-height':novaGridHeightCalculated});
+    }
+
+    function expandCollapse(e, idx) {
+      var evt = (e ? e : window.event);
+      var source = evt.target || evt.srcElement;
+      source = source.parentNode;
+      temp = $(source).html();
+      $(source).html(exCollVals[idx]);
+      exCollVals[idx] = temp;
+    }
+
+    function formatLogEntry(entry) {
+        entry.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        if(entry.search(/#012/) != -1)
+        {
+          entry = entry.replace(/#012/g, "<BR>");
+          var modEntry = entry.replace(/<BR>/, '<span class="exCollItem" onclick="expandCollapse(event, ' + exCollIdx + ')">-</span><BR>');
+          exCollVals[exCollIdx] = modEntry;
+          entry = entry.substring(0, entry.indexOf('<BR>')) + '...<span class="exCollItem" onclick="expandCollapse(event, ' + exCollIdx + ')">+</span>';
+          exCollIdx++; 
+        }
+        entry = "<span style='font-weight: bold; user-select: none;'>" + entry + "</span>";
+        return entry;
+    }
+    
+    function formatHoneydLogEntry(entry) {
+        entry.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        entry = "<span style='font-weight: bold;'>" + entry + "</span>";
+        entry = entry.replace(/#012/g, "<BR>");
+        return entry;
+    }
+    
+    function showAdvancedHoneydChanged()
+    {
+        if($('#showAdvancedHoneyd').is(':checked'))
+        {
+            honeydLogGrid.m_columns[2].isDisabled = false;
+        }
+        else
+        {
+            honeydLogGrid.m_columns[2].isDisabled = true;
+        }
+
+        honeydLogGrid.GenerateTableHeader();
+        honeydLogGrid.Render();
+        $('#honeydLogTable :first-child').first().css({'min-height':novaGridHeightCalculated});
+    }
+    
+    var honeydIndex = 0;
+    function AddHoneydLogEntry(line)
+    {
+        line = line.replace(/ +(?= )/g, '');
+        var match = line.match(/(\S+ \S+ \S+) ([^:]+): (.*)/);
+
+        if(match != null)
+        {
+            match.splice(0,1,Number(honeydIndex));
+            honeydIndex++;
+            
+            match[3] = "<span style='font-weight: bold;'>" + match[3] + "</span>";
+            match.style = "background-color: #E4F2FF";
+            
+            honeydLogGrid.PushEntry(match);
+        }
+        else
+        {
+            console.log("No match for entry '" + line + "'");
+        }
+    }
+
+    function init()
+    {
+        var log = $('#rawLog').html();
+        var gridStructure = new Array();
+        novaGridHeightCalculated = (26 + (25 * 18));
+        gridStructure.push({name: "Message #", isDisabled: false});
+        gridStructure.push({name: "Timestamp", isDisabled: false});
+        gridStructure.push({name: "Machine Info", isDisabled: true});
+        gridStructure.push({name: "Level", isDisabled: false});
+        gridStructure.push({name: "File", isDisabled: true});
+        gridStructure.push({name: "Line", isDisabled: true});
+        gridStructure.push({name: "Message", isDisabled: false, formatter: formatLogEntry});
+        logGrid = new NovaGrid(gridStructure, 0, $('#logTable')[0], 'logGrid');
+        logGrid.SetRowsPerPage(25);
+        
+        var log = log.toString().split(/\r\n|\n\r|\n|\r/);
+
+        for(var i in log)
+        {
+            line = String(log[i]);
+            AddLogEntry(line);
+        }
+
+        logGrid.Render();  
+        $('#logTable :first-child').first().css({'min-height':novaGridHeightCalculated});
+
+        var log = $('#rawHoneydLog').html();
+        var gridStructure = new Array();
+        gridStructure.push({name: "Message #", isDisabled: false});
+        gridStructure.push({name: "Timestamp", isDisabled: false});
+        gridStructure.push({name: "Machine Info", isDisabled: true});
+        gridStructure.push({name: "Message", isDisabled: false, formatter: formatHoneydLogEntry});
+        honeydLogGrid = new NovaGrid(gridStructure, 0, $('#honeydLogTable')[0], 'honeydLogGrid');
+        honeydLogGrid.SetRowsPerPage(25);
+        
+        var log = log.toString().split(/\r\n|\n\r|\n|\r/);
+
+        for(var i in log)
+        {
+            line = String(log[i]);
+
+            AddHoneydLogEntry(line);
+        }
+
+        honeydLogGrid.Render();
+        $('#honeydLogTable :first-child').first().css({'min-height':novaGridHeightCalculated});
+    
+        now.ready(function()
+        {
+            now.newLogLine = function (linenum, line)
+            {
+               AddLogEntry(line);
+               logGrid.Render();
+            }
+            
+            now.newHoneydLogLine = function (lineNum, line)
+            {
+               AddHoneydLogEntry(line);
+               honeydLogGrid.Render();
+            }
+        });
+    }

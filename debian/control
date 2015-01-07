@@ -1,0 +1,22 @@
+Source: nova
+Section: net
+Priority: optional
+Maintainer: Dan Petro <dan.petro@datasoft.com>
+Build-Depends: debhelper (>= 8.0.0), build-essential, libann-dev, libpcap0.8-dev, libboost-program-options-dev, libboost-serialization-dev, libsqlite3-dev, libcurl3, libcurl4-gnutls-dev, libboost-system-dev, libboost-filesystem-dev, libevent-dev, libprotoc-dev, protobuf-compiler
+Standards-Version: 3.9.2
+Homepage: https://github.com/DataSoft/Nova
+
+Package: nova
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, nmap (>= 6.00-0.1), libcap2-bin
+Description: Anti-Reconnaissance System
+ Use Nova to prevent and detect hostile reconnaissance on your private network. 
+ Create a large array of decoy honeypots to obfuscate the network, and use  
+ machine learning to classify hostile activity in machines that interact with them.
+ .
+ Nova comes in two main halves: novad and its user interfaces. novad is a 
+ network daemon which listens to network traffic and classifies suspects
+ using the k-NN statistical classification algorithm. The user interface, Quasar,
+ is a web based GUI (powered by node.js) for accessing novad and honeyd.
+ .
+ Nova is Free Software written primarily in C++ and Javascript

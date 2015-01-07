@@ -1,0 +1,293 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+style.
+  span.labelSpan {
+    font-weight: bold;
+  }
+
+script.
+  var ifaces = !{JSON.stringify(INTERFACES)};
+  var used = '#{WEB_UI_IFACE}';
+  
+  function handlePulsarPaneSlide()
+  {
+    if($('#PULSAR_ENABLE').is(':checked'))
+    {
+      $('#pulsarPane').stop().slideDown(400);
+    }
+    else
+    {
+      $('#pulsarPane').stop().slideUp(400);
+    }
+  }
+  
+  function handleQuasarPaneME()
+  {
+    $('#qWarn').fadeIn(400);
+  }
+  
+  function handleQuasarPaneML()
+  {
+    $('#qWarn').stop().fadeOut(400);
+  }
+  
+  function handleNovadPaneME()
+  {
+    $('#nWarn').fadeIn(400);
+  }
+
+  function handleNovadPaneML()
+  {
+    $('#nWarn').stop().fadeOut(400);
+  }
+  
+  function handleManifaceSlide()
+  {
+    if($('#slideManiface').is(':checked'))
+    {
+      $('#manifacePane').stop().slideDown(400);
+    }
+    else
+    {
+      $('#manifacePane').stop().slideUp(400);
+    }
+  }
+  
+  function init()
+  {
+    handlePulsarPaneSlide();
+    for(var i in ifaces)
+    {
+      var option = document.createElement('option');
+      option.innerHTML = ifaces[i];
+      if(ifaces[i] == used)
+      {
+        option.selected = true;
+      }
+      $('#WEB_UI_IFACE').append(option);
+    }
+    handleManifaceSlide();
+  }
+  
+form(method="post", action="/configureNovaSave")
+  input(type='hidden', name='ADVANCED', value='1')
+  h2 General Configuration
+
+  div#restartQuasar(onmouseover='handleQuasarPaneME()', onmouseout='handleQuasarPaneML()')
+    div(style='height: 20px;')
+      label(style='font-size: 16px; margin-top: 10px;') Quasar
+      p#qWarn(style='margin-right: 10px; float: right; text-align: center; font-style: italic; color: #B00000; display: none;') Quasar must be restarted for any changes to take effect
+    br
+    br
+  
+    label Quasar Port
+    input(type="number", name="WEB_UI_PORT", value=WEB_UI_PORT)
+    br
+
+    input(type='hidden', name='MANAGE_IFACE_ENABLE', value='0')
+    if(MANAGE_IFACE_ENABLE == "1")
+      input#slideManiface(type='checkbox', name='MANAGE_IFACE_ENABLE', value="1", checked=true, onclick='handleManifaceSlide()')
+    else
+      input#slideManiface(type='checkbox', name='MANAGE_IFACE_ENABLE', value="1", onclick='handleManifaceSlide()')
+    span.labelSpan Enable Management Interface?
+    br
+    div#manifacePane
+      label Management Interface
+      select#WEB_UI_IFACE(name='WEB_UI_IFACE')
+      br
+    br
+  
+    a(style='text-decoration: none; font-weight: bold;', href="/generateNewCerts") Click to generate new Quasar TLS private key and certificate
+    br
+    a(style='text-decoration: none; font-weight: bold;', href="/editTLSCerts") Click to upload new TLS certificates
+    br
+    br
+  
+    a(style='text-decoration: none; font-weight: bold;', href="/shutdown") Shut down Quasar
+    br
+    br
+    
+    input(type='hidden', name='MASTER_UI_ENABLED', value='0')
+    if(MASTER_UI_ENABLED == "1")
+      input#PULSAR_ENABLE(type="checkbox", name="MASTER_UI_ENABLED", value="1", checked=true, onclick='handlePulsarPaneSlide()')
+    else
+      input#PULSAR_ENABLE(type="checkbox", name="MASTER_UI_ENABLED", value="1", onclick='handlePulsarPaneSlide()')
+    span.labelSpan Use Pulsar?
+    br
+      
+    div#pulsarPane
+      label Pulsar Server IP
+      input.wide(name="MASTER_UI_IP",  value=MASTER_UI_IP)
+      br
+      
+      label Pulsar Client ID
+      input.wide(name="MASTER_UI_CLIENT_ID",  value=MASTER_UI_CLIENT_ID)
+      br
+      
+      label Pulsar Reconnect Time
+      input.wide(name="MASTER_UI_RECONNECT_TIME",  value=MASTER_UI_RECONNECT_TIME)
+    br
+  br
+  div#restartNovad(onmouseover='handleNovadPaneME()', onmouseout='handleNovadPaneML()')
+    div(style='height: 20px;')
+      label(style='font-size: 16px; margin-top: 10px;') File Paths
+      p#nWarn(style='margin-right: 10px; float: right; text-align: center; font-style: italic; color: #B00000; display: none;') Novad must be restarted for any changes to take effect
+    br
+    
+    label Classification Training Data
+    input.wide(name="TRAINING_DATA_PATH",  value=TRAINING_DATA_PATH)
+    br
+    
+    label Path to pcap file
+    input.wide(type="text", name="PCAP_FILE",  value=PCAP_FILE)
+    br
+    
+    label Path to Haystack Honeyd Config File
+    input.wide(type="text", name="HS_HONEYD_CONFIG",  value=HS_HONEYD_CONFIG)
+    br
+  
+    h2 Special Run Settings
+
+    label Additional arguements to give to Honeyd?
+    input.wide(type="text", name="ADDITIONAL_HONEYD_ARGS",  value=ADDITIONAL_HONEYD_ARGS)
+
+
+    label Read pcap file?
+    br
+    if(READ_PCAP != "0")
+      input(type="radio", name="READ_PCAP", value="1", checked)
+      |Yes
+      br
+      input(type="radio", name="READ_PCAP", value="0")
+      |No
+      br
+    else
+      input(type="radio", name="READ_PCAP", value="1")
+      |Yes
+      br
+      input(type="radio", name="READ_PCAP", value="0", checked)
+      |No
+      br
+    br
+  
+    label Packet Capture Buffer Size (in bytes)
+    input.wide(type="number", step="1", min="1024", name="CAPTURE_BUFFER_SIZE",  value=CAPTURE_BUFFER_SIZE)
+    br
+    
+    label Number of message worker threads
+    input.wide(type="number", step="1", min="1", name="MESSAGE_WORKER_THREADS",  value=MESSAGE_WORKER_THREADS)
+    br
+    
+    h2 Classification Settings
+    a(style='text-decoration: none; font-weight: bold;', href='/editClassifiers') Edit Classifiers (advanced users only)
+    br
+    a(style='text-decoration: none; font-weight: bold;', href='/editAuthorizedIPs') Edit Authorized IP file (for UNAUTHORIZED_SUSPECTS classifier)
+    br
+    a(style='text-decoration: none; font-weight: bold;', href='/editAuthorizedMACs') Edit Authorized MAC file (for UNAUTHORIZED_MACS classifier)
+    br
+    br
+    
+    label Neighbors
+    input.wide(type="number", step="1", min="1", name="K",  value=K)
+    br
+    
+    label Only classify packets going to honeypots?
+    br
+    if(ONLY_CLASSIFY_HONEYPOT_TRAFFIC != "0")
+      input(type="radio", name="ONLY_CLASSIFY_HONEYPOT_TRAFFIC", value="1", checked)
+      |Yes
+      br
+      input(type="radio", name="ONLY_CLASSIFY_HONEYPOT_TRAFFIC", value="0")
+      |No
+      br
+    else
+      input(type="radio", name="ONLY_CLASSIFY_HONEYPOT_TRAFFIC", value="1")
+      |Yes
+      br
+      input(type="radio", name="ONLY_CLASSIFY_HONEYPOT_TRAFFIC", value="0", checked)
+      |No
+      br
+    br
+    
+    label Classification Timeout
+    input.wide(type="number", step="1", min="0", name="CLASSIFICATION_TIMEOUT",  value=CLASSIFICATION_TIMEOUT)
+    br
+  
+    label EPS
+    input.wide(name="EPS",  value=EPS)
+    br
+  
+    label Classification Threshold
+    input.wide(name="CLASSIFICATION_THRESHOLD",  value=CLASSIFICATION_THRESHOLD)
+    br
+  
+    label Packets Needed Before Classification
+    input.wide(type="number", name="MIN_PACKET_THRESHOLD", value=MIN_PACKET_THRESHOLD);
+    br
+    
+    label Clear data after suspect logged as hostile?
+    br
+    if(CLEAR_AFTER_HOSTILE_EVENT != "0")
+      input(type="radio", name="CLEAR_AFTER_HOSTILE_EVENT", value="1", checked)
+      |Yes
+      br
+      input(type="radio", name="CLEAR_AFTER_HOSTILE_EVENT", value="0")
+      |No
+      br
+    else
+      input(type="radio", name="CLEAR_AFTER_HOSTILE_EVENT", value="1")
+      |Yes
+      br
+      input(type="radio", name="CLEAR_AFTER_HOSTILE_EVENT", value="0", checked)
+      |No
+      br
+    br
+  
+    label Custom pcap Filter String
+    input.wide(type="text", name="CUSTOM_PCAP_FILTER", value=CUSTOM_PCAP_FILTER)
+    br
+    
+    label Custom pcap Filter String Mode
+    br
+    if(CUSTOM_PCAP_MODE != "0")
+      input(type="radio", name="CUSTOM_PCAP_MODE", value="1", checked)
+      |Override
+      br
+      input(type="radio", name="CUSTOM_PCAP_MODE", value="0")
+      |Append
+      br
+    else
+      input(type="radio", name="CUSTOM_PCAP_MODE", value="1")
+      |Override
+      br
+      input(type="radio", name="CUSTOM_PCAP_MODE", value="0", checked)
+      |Append
+      br
+    br
+  
+    h2 Training Mode Settings
+  
+    label Thinning Distance
+    input.wide(name="THINNING_DISTANCE",  value=THINNING_DISTANCE)
+    br
+  
+    h2 Doppelganger
+    label Doppelganger IP
+    input.wide(name="DOPPELGANGER_IP",  value=DOPPELGANGER_IP)
+    br
+    br
+   

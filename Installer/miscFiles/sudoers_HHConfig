@@ -1,0 +1,17 @@
+# /etc/sudoers
+#
+# This file MUST be edited with the 'visudo' command as root.
+#
+# See the man page for details on how to write a sudoers file.
+#
+
+# Host alias specification
+
+# User alias specification
+
+# Cmnd alias specification
+
+# %nova ALL=(root) NOPASSWD:/usr/bin/nmap, /usr/local/bin/nmap
+Cmnd_Alias HHCMNDS = /usr/bin/nmap, /usr/local/bin/nmap
+
+Defaults!HHCMNDS exempt_group=nova

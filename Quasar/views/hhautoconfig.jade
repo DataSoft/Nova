@@ -1,0 +1,454 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+include mixins/headers.jade
+
+extends layout
+
+block headerAdditions
+  script(src='scripts/spin.js')
+  script.
+    var Interfaces = '#{INTERFACES}';
+    var InterfaceAliases = '#{interfaceAliases}';
+   
+    var interfaceList = Interfaces.split(',');
+    var interfaceAliasList = InterfaceAliases.split(',');
+
+    var interfaceChoices = [];
+    for (var i = 0; i < interfaceList.length; i++) {
+        interfaceChoices.push({text: interfaceAliasList[i], value: interfaceList[i]});
+    }
+    
+    function viewModelApp() {
+        var self = this;
+        self.newHaystackName = ko.observable('');
+        self.oldHaystackName = ko.observable('');
+
+        self.isNewHaystackSelection = ko.observable('1');
+        self.isNewHaystack = ko.computed(function() {return parseInt(self.isNewHaystackSelection())}, self);
+        self.groupName = ko.computed(function(){
+           if (self.isNewHaystack()) 
+           {
+            return self.newHaystackName();
+           }
+           else
+           {
+            return self.oldHaystackName();
+           }
+        }, self);
+
+        self.subnetsToScan = ko.observableArray();
+        self.interfaceSubnets = ko.observableArray();
+
+        self.interfaceChoices = interfaceChoices;
+
+        self.removeSubnet = function(subnet){
+            self.subnetsToScan.remove(subnet);
+        }
+        
+        self.addSubnet = function(subnet){
+            if (!isSubnetScanned(subnet.subnet))
+            {
+                self.subnetsToScan.push(subnet);
+            }
+        }
+
+        self.nodeCreationType = ko.observable();
+        self.nodeCountFixed = ko.observable(1);
+        self.nodeCountRatio = ko.observable(1);
+        self.nodeCountRange = ko.observable('');
+
+        self.nodeCount = ko.computed(function() {
+          var num = -1;
+          if(self.nodeCreationType() == 'fixed') 
+          {
+            num = self.nodeCountFixed();
+          } 
+          else if(self.nodeCreationType() == 'ratio')
+          {
+            num = self.nodeCountRatio();
+          }
+          else if(self.nodeCreationType() == 'range')
+          {
+            num = self.nodeCountRange();
+            var regex = new RegExp('^([0-255]\.){3}([0-255])\-([0-255]\.){3}([0-255])$');
+            if(regex.test(num) == 'false')
+            {
+              num = -1;
+            }
+          }
+          return num;
+        }, self);
+    };
+
+    var viewModel = new viewModelApp();
+
+    function validateAndAdd(id)
+    {
+      var toValidate = $('#' + id).val();
+    
+      var errLabel = $('#errorLabel');
+    
+      var regex = new RegExp('^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})\/[1-3]?[0-9]$');
+    
+      errLabel.css('color', 'red');
+      if((toValidate[toValidate.length - 2] >= 3 && toValidate[toValidate.length - 1] > 2)
+        || (toValidate[toValidate.length - 3] != '/' && toValidate[toValidate.length - 2] != '/'))
+      {
+        errLabel.html('Invalid subnet bit value (e.g. 33 or higher)');
+        return;
+      }
+    
+      if(isSubnetScanned(toValidate))
+      {
+        errLabel.html('That subnet is already in the subnets list');
+        return;
+      }
+    
+      if(regex.test(toValidate))
+      {
+        errLabel.css('color', 'green');
+        errLabel.html('Valid subnet found!');
+        viewModel.subnetsToScan.push({subnet: toValidate});
+        $('#' + id).attr('value', '');
+      }
+      else
+      {
+        errLabel.html('That is not a valid subnet.');
+        return;
+      }
+    }
+    
+    function isSubnetScanned(test)
+    {
+      for (var i in viewModel.subnetsToScan()) {
+        if (test == viewModel.subnetsToScan()[i].subnet) {
+            return true;
+        }
+      }
+      return false;
+    }
+    
+    function RunScan()
+    {
+      if(viewModel.nodeCount() == -1)
+      {
+        alert('There is a problem with your value for number of nodes!');
+        return;
+      }
+      
+      if(GetHaystackName() == '#')
+      {
+        alert('Invalid haystack name! Can not be blank or non-alphanumeric characters.');
+        return;
+      }
+
+      for(var i = 0; i < viewModel.subnetsToScan().length; i++)
+      {
+        if (parseInt(String(viewModel.subnetsToScan()[i].subnet).split('/')[1]) < 24)
+        {
+            var res = confirm('Warning: scanning subnets greater than size 24 can take several hours! Are you sure you want to continue?');
+            if (!res)
+            {
+                return;
+            }
+            else
+            {
+                break;
+            }
+        }
+      }
+      
+      var iface = GetNodeInterface();
+      
+      if(viewModel.subnetsToScan().length != 0)
+      { 
+        disableBackground($('#setup')[0]);
+        $('#startScan').attr('value', 'Scanning...'); 
+        $('#startScan').attr('disabled', 'true');
+        $('#lightbox').css('display', 'block');
+        $('#setup').css('opacity', '0.5');
+        var opts = {
+            lines: 17,
+            length: 0,
+            width: 4,
+            radius: 27,
+            corners: 0.6,
+            rotate: 0,
+            color: '#E8A02F',
+            speed: 1,
+            trail: 34,
+            shadow: false,
+            hwaccel: false,
+            className: 'spinner',
+            zIndex: 1003,
+            top: 20,
+            left: 'auto'
+        };
+        
+        var spinner = new Spinner(opts).spin($('#spinnerDiv')[0]);
+        $('#spinnerDiv').css('height', (((opts.radius * 2) + 30)+ 'px'));
+        var divWidth = $('#lightbox')[0].scrollWidth;
+        $('#appendText').css('width', (divWidth + 'px'));
+        try 
+        {
+          now.ShowAutoConfig(iface, viewModel.nodeCreationType(), viewModel.nodeCount(), GetSubnets(), GetHaystackName(), !viewModel.isNewHaystack(), autoscancb, routeToReview); 
+        } 
+        catch(err) 
+        {
+          alert('Action failed because unable to connect to server! Please try refreshing the page and trying again.');
+          console.log('err was: ' + err);
+        }   
+      } 
+      else
+      {
+          alert('Must have at least one subnet for scanning');
+          return false;
+      }
+    }
+
+    function disableBackground(source)
+    {
+      var disableUs = source.childNodes;
+      for(var i in disableUs)
+      {
+        if(typeof disableUs[i] == 'object' && disableUs[i].tagName != undefined)
+        {
+          disableUs[i].disabled = true;
+          if(disableUs[i].hasChildNodes())
+          {
+            disableBackground(disableUs[i]);
+          }
+        }
+      }
+    }
+
+    function enableBackground(source)
+    {
+      var enableUs = source.childNodes;
+      for(var i in enableUs)
+      {
+        if(typeof enableUs[i] == 'object' && enableUs[i].tagName != undefined)
+        {
+          enableUs[i].disabled = false;
+          if(enableUs[i].hasChildNodes())
+          {
+            enableBackground(enableUs[i]);
+          }
+        }
+      }
+    }
+
+    function GetNodeInterface()
+    {
+      return $('#nodeInterface').val();
+    }
+    
+    function GetSubnets()
+    {
+        var returnString = '';
+      
+        var index = 0;
+        for(var i in viewModel.subnetsToScan())
+        {
+            if (index != 0)
+            {
+                returnString += ',';
+            }
+            index++;
+            returnString += viewModel.subnetsToScan()[i].subnet;
+        }       
+        
+        return returnString;
+    }
+
+    function GetHaystackName()
+    {
+      var group = viewModel.groupName();
+      if((new RegExp('^[a-zA-Z0-9 -_]+$')).test(group))
+      {
+        return group;
+      }
+      else
+      {
+        return '#';
+      }
+    }
+
+    function autoscancb(err, text)
+    {
+        if (err) {
+            alert("Error: " + err);
+            window.location = window.location;
+            return;
+        }
+        var p = document.createElement('p');
+        var appText = $('#appendText');
+        p.value = text;
+        p.innerHTML = text;
+        appText.append(p);
+        appText[0].scrollTop = appText[0].scrollHeight;
+    }
+    
+    function routeToReview(redirect)
+    {
+      window.location = redirect.toString();
+    }
+
+    function cancelScan()
+    {
+      if(typeof now.CancelAutoScan == 'function')
+      {
+        now.CancelAutoScan(viewModel.groupName());
+      }
+      else
+      {
+        alert('*** DEBUG *** Error: now.CancelAutoScan not defined (should not see this)');
+      }
+    }
+
+    function populateTable()
+    {
+      var checked = true;
+      for(var i in interfaceList)
+      {
+
+        now.GetSubnetFromInterface(interfaceList[i], i, function(iface, subnet, index){
+          if(subnet == '')
+          {
+            console.log('subnet string is empty; failed to get IP/netmask for interface ' + iface);
+            return;
+          }
+        
+          var text = subnet + ' (' + interfaceAliasList[index] + ')';
+          viewModel.interfaceSubnets.push({text: text, subnet: subnet});
+        });
+      } 
+    }
+   
+
+    function init() {
+      var initialized = false;
+      now.ready(function(){
+        if(!initialized)
+        {
+          initialized = true;
+          ko.applyBindings(viewModel);
+          populateTable();
+        }
+      });
+    }
+
+block content
+  if(SCANERROR !== undefined)
+    label(id='scanError', style='color: red;') #{SCANERROR}
+  
+  +header("Haystack Autoconfiguration Tool")
+    div#setup
+      table
+        tr
+          td
+            label(style='font-weight: bold;') New Haystack?
+          td
+            input(data-bind='checked: isNewHaystackSelection', value='1', type='radio')
+            label Create new haystack
+            br
+            input(data-bind='checked: isNewHaystackSelection', value='0', type='radio')
+            label Append to haystack
+
+        tr
+          td
+            label(id='nameLabel', style='font-weight: bold') Haystack Name
+          td
+            input(data-bind='visible: isNewHaystack, value: newHaystackName, valueUpdate: "afterkeydown"', type='text')
+            select(data-bind='visible: !isNewHaystack(), value: oldHaystackName')
+              - for(var i = 0; i < GROUPS.length; i++)
+                - if(GROUPS[i] != '' && GROUPS[i] != undefined)
+                  option #{GROUPS[i]}
+        tr
+          td
+            label#numNodesLabel(style='font-weight: bold') How to create nodes&nbsp&nbsp
+          td
+            select(data-bind='value: nodeCreationType')
+              option(value='fixed', selected='selected') DHCP: Fixed number of nodes
+              option(value='ratio') DHCP: Ratio to number found in scan
+              option(value='range') STATIC: Place nodes in range of IPs
+
+         tr
+           td
+             label(style='font-weight: bold') Nodes to create
+           td
+             input(data-bind='visible: nodeCreationType() == "fixed", value: nodeCountFixed, valueUpdate: "afterkeydown"', type='number', min='1')
+             input(data-bind='visible: nodeCreationType() == "ratio", value: nodeCountRatio, valueUpdate: "afterkeydown"', type='number', min='0')
+             input(data-bind='visible: nodeCreationType() == "range", value: nodeCountRange, valueUpdate: "afterkeydown"', type='text', placeholder='###.###.###.###-###.###.###.###', style='width: 210px')
+
+          tr
+            td
+              label(style='font-weight: bold') Interface for new nodes
+            td
+              select#nodeInterface(data-bind="options: interfaceChoices, optionsHtml: 'text', optionsValue: 'value'")
+      br
+      br
+      label(style='font-weight: bold;') Subnets to Scan
+      br
+      table
+        tbody(data-bind='foreach: interfaceSubnets')
+          tr
+            td(data-bind='html: text', style='width: 200px')
+            td
+              button(data-bind='click: $root.addSubnet')
+                img.buttonIcon(src='images/add.png')
+                span.buttonSpan Add Subnet
+      
+      br
+      label(style='font-weight: bold;') Additional Subnets to Scan
+      br
+      label(id='errorLabel', style='color:red;')  
+      br
+      input(type='text', style='width:200px', id='subnetToAdd', width='20', onkeydown='if(event.keyCode == 13){document.getElementById("addSubnet").click(); document.getElementById("subnetToAdd").value=""; event.returnValue=false; event.cancel=true; }', placeholder='xxx.xxx.xxx.xxx/##') 
+      button(type='button', id='addSubnet', onclick='validateAndAdd("subnetToAdd");')
+       img.buttonIcon(src='images/add.png')
+       span.buttonSpan Add Subnet
+      br
+      br
+      table(id='showTable')
+        thead
+          tr
+            th
+              label Subnets that will be scanned
+        tbody(data-bind='foreach: subnetsToScan')
+          tr
+            td(data-bind='text: subnet', style='width: 200px')
+            td
+              button(data-bind='click: $root.removeSubnet')
+                img.buttonIcon(src='images/delete.png')
+                span.buttonSpan Delete
+              
+        
+      br
+      br
+      button(id='startScan', onclick='RunScan()')
+        img.buttonIcon(src='images/ok.png')
+        span.buttonSpan Start Scan
+      
+  div(id='lightbox', class='white_content')
+    label(style='font-size: 1.2em;') Scan Commencing...
+    div(id='spinnerDiv', style='height: 30px; padding-botton: 30px;')
+    div(id='appendText', style='height: 60%; width: auto; overflow-y: scroll; overflow-x: hidden')
+    button(id='cancelscan', onclick='cancelScan()')
+      img.buttonIcon(src='images/cancel.png')
+      span.buttonSpan Cancel Scan
+    

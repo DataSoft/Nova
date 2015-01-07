@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.datasoft.ceres.DetailsLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/linearLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" 
+    android:background="@color/detailsBackground" >
+
+    <LinearLayout
+        android:id="@+id/chartsLayout"
+        android:layout_width="match_parent"
+        android:layout_height="140dp"
+        android:layout_weight="1"
+        android:orientation="horizontal" />
+
+    <LinearLayout
+        android:id="@+id/IPLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="horizontal" >
+	            
+        <TextView
+	        android:id="@+id/IPLabel"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_weight="1"
+	        android:textStyle="bold"
+	        android:text="@string/IPLabel" />
+		            
+	    <TextView
+	        android:id="@+id/suspectIP"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_weight="1"
+	        android:ems="10"
+	        android:text="@+id/suspectIpString" />        
+    </LinearLayout>
+        
+    <LinearLayout
+        android:id="@+id/ifaceLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="horizontal" >
+	            
+        <TextView
+	        android:id="@+id/ifaceLabel"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_weight="1"
+	        android:textStyle="bold"
+	        android:text="@string/ifaceLabel" />
+
+	    <TextView
+	        android:id="@+id/suspectIface"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_weight="1"
+	        android:ems="10"
+	        android:text="@+id/suspectIfaceString" />       
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/classificationLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="horizontal" >
+	            
+        <TextView
+	        android:id="@+id/classificationLabel"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_weight="1"
+	        android:textStyle="bold"
+	        android:text="@string/classificationLabel" />
+
+	    <TextView
+	        android:id="@+id/suspectClassification"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_weight="1"
+	        android:ems="10"
+	        android:text="@+id/suspectClassification" />   
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/lastSeenLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="horizontal" >
+	            
+        <TextView
+	        android:id="@+id/lastSeenLabel"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_weight="1"
+	        android:textStyle="bold"
+	        android:text="@string/lastSeenLabel" />
+
+	    <TextView
+	        android:id="@+id/suspectLastPacket"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:layout_weight="1"
+	        android:ems="10"
+	        android:text="@+id/suspectLastPacket" />  
+    </LinearLayout>
+
+</com.datasoft.ceres.DetailsLayout>

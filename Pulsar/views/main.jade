@@ -1,0 +1,233 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-   Nova is free software: you can redistribute it and/or modify
+//-    it under the terms of the GNU General Public License as published by
+//-    the Free Software Foundation, either version 3 of the License, or
+//-    (at your option) any later version.
+//- 
+//-    Nova is distributed in the hope that it will be useful,
+//-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-    GNU General Public License for more details.
+//- 
+//-    You should have received a copy of the GNU General Public License
+//-    along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+extends layout
+
+block content
+  div#setup
+    label(style='font-weight: bold') Message Targets:
+    input(id='showtargets', readonly=true)
+  
+    h1 Nova Control Panel
+    
+    table
+      thead
+        tr
+          th Connected Clients
+          th Groups
+      tbody
+        tr
+          td
+            table(class='listContainer')
+              tbody(id='clientsList')
+          td
+            table(class='listContainer')
+              tbody(id='groupsList')
+  
+    br
+  
+    button(disabled=true, id='button0', onclick='startNovad();', style='width: 160px') Start Classifying
+    button(disabled=true, id='button2', onclick='startHaystack();', style='width: 160px') Start Haystack
+    button(disabled=true, id='button4', onclick='requestBenign();', style='width: 160px') Get Benign Suspects
+  
+    br
+    br
+  
+    button(disabled=true, id='button1', onclick='stopNovad();', style='width: 160px') Stop Classifying
+    button(disabled=true, id='button3', onclick='stopHaystack();', style='width: 160px') Stop Haystack
+    button(disabled=true, id='button5', onclick='stopRequestBenign()', style='width: 160px') Cancel Benign Request
+    
+    br
+    br
+    
+    button(disabled=true, id='button6', onclick='if(confirm("Are you sure you want to clear the suspects for " + getSelected() + "? This is irreversible.")){clearSuspects()}else{return;}', style='width: 160px') Clear Suspects For Selected Clients
+    
+    br
+    br
+  
+    h2 Currently Requesting Benign Suspects From:
+    input(id='benignList', readonly=true)
+  
+    div#nova_suspects_header
+      h1 Suspect List
+      //button#liveUpdateButton(data-dojo-type="dijit.form.Button",type="button") Pause Updates/Auto Scrolling
+      //  script(type="dojo/method", data-dojo-event="onClick", data-dojo-args="evt")
+      //    | liveUpdate = !liveUpdate;
+      //    | if (!liveUpdate) {dojo.byId("liveUpdateButton").innerHTML = "Unpause table refreshing";}
+      //    | else {dojo.byId("liveUpdateButton").innerHTML = "Pause table refreshing";}
+      //br
+      br
+      
+      button(onclick='toggleAdvancedFilter()') Advanced Filtering Options
+      div#advancedFiltering(style='display: none;')
+        br
+        p Filter by IP (supports standard regular expressions. Example: '192\.168\.10\..*|192\.168\.3\..*')
+        input#ipFilter(name='ipFilter', type='text', value='')
+        br
+        p Filter by clientId (will match with STRING_ENTERED*)
+        input#clientFilter(name='clientFilter', type='text', value='')
+        br
+        button(onclick='applyAdvancedFilter()') Apply Advanced Filters
+        button(onclick='disableAdvancedFilter()') Disable Advanced Filters
+      div#tablePages
+      br
+  
+    div#nova_suspects
+      table#suspectTable
+    div(data-dojo-type='dijit.layout.ContentPane', id='nova_suspects_error_view', style='display: none', title='Suspects')
+      h4 Novad is not currently connected or running. Try starting it.
+    
+  div(id='lightbox', class='white_content', style='overflow-y: hidden')
+    div(id='spinnerDiv', style='height: 30px; padding-botton: 30px;')
+    div(id='details', style='height: 60%; width: auto; overflow-x: hidden')
+    button(id='close', onclick='closeLightbox()') Close
+   
+block headerAdditions
+  link(rel='stylesheet', type='text/css', href='novagrid.css', media='screen')
+  script(type='text/javascript', src='scripts/NovaGrid.js')
+  script(type='text/javascript', src='scripts/ConnectionManagement.js')
+  script(type='text/javascript', src='scripts/spin.js')
+  script(type='text/javascript', src='scripts/MainFunctions.js')
+  script
+    // Performance boost accessing local var over document lookup
+    var theDoc = document;
+
+    var doRender = false;
+
+    var clientCount = 0;
+    var suspectGrid;
+    var liveUpdate = true;
+    var lastNovadStatus = 'unknown';
+
+    var advancedFilters = new Object();
+    var advancedFilterEnabled = false;
+    var advancedIpFilter = null;
+    var clientIdFilter = null;
+
+    var spinner = null;
+
+    var message = {};
+    message.id = '';
+
+    var clients = '#{CLIENTS}'.split(':');
+    var groups = !{GROUPS};
+    
+    function getSelected()
+    {
+      var split = message.id.split(':');
+      
+      var clean = [];
+      
+      for(var i in split)
+      {
+        if(split[i] != undefined && split[i] != '')
+        {
+          clean.push(split[i]);
+        }
+      }
+      
+      var ret = '';
+      
+      for(var i = 0; i < clean.length; i++)
+      {
+        if((i == (clean.length - 1)) && (clean.length > 1))
+        {
+          ret += 'and ' + clean[i];
+        }
+        else if(clean.length > 1)
+        {
+          ret += clean[i] + ', ';
+        }  
+        else
+        {
+          ret += clean[i];
+        }
+      }
+      
+      return ret;
+    }
+    
+    function toggleAdvancedFilter()
+    {
+      var af = $('#advancedFiltering');
+      if(af.css('display') == 'none')
+      {
+        af.css('display', 'block');
+      }
+      else
+      {
+        af.css('display', 'none');
+      }
+    }
+    
+    function Init() {
+      var gridStructure = new Array();
+      gridStructure.push({name: 'Address'});
+      gridStructure.push({name: 'Client ID'});
+      gridStructure.push({name: 'Classification', formatter: classificationFormatter});
+      gridStructure.push({name: 'Last Seen'});
+      gridStructure.push({name: 'Hostile'});
+ 
+      suspectGrid = new NovaGrid(gridStructure, 0, theDoc.getElementById('suspectTable'));
+
+      // Sort by classification by default
+      suspectGrid.SetSortByKey(2);
+      suspectGrid.SetRowsPerPage(100);
+      suspectGrid.SetRenderCallback(onGridRendered);
+
+      $('#suspectTable').html(suspectGrid.GetTable());
+      
+      now.GetHostileSuspects();
+      
+      suspectGrid.Render();
+      
+      setInterval(function(){
+        if(doRender == true)
+        {
+          suspectGrid.Render();
+          doRender = false;
+        }
+      }, 3000);   
+    }
+
+    require(['dojo/ready', 'dojo/domReady!'], function(ready){
+      ready(function() {
+        now.ready(function() {
+          Init();
+          theDoc.getElementById('showtargets').value = '';
+          now.GetClients(now.RenderConnectionsList);
+          now.SetUpNotificationsButton();
+          now.SetUpHostileEventsButton(now.UpdateHostileEventsButton('read'));
+          now.RenderBenignRequests();
+          now.GetClients(function(list){
+            for(var i in list)
+            {
+              if(list[i] != '')
+              {
+                now.UpdateConnectionsList(list[i], 'updateStatus');  
+              } 
+            }
+          });
+          setUpClientsList('clientsList');
+          setUpGroupsList('groupsList');
+          setTimeout(function(){
+            setUpClientsList('clientsList');
+            setUpGroupsList('groupsList');
+          }, 3000);
+        });
+      });
+    });
+

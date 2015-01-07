@@ -1,0 +1,2 @@
+?package(nova):needs="X11|text|vc|wm" section="Applications/Network/Monitoring"\
+  title="novad" command="/usr/bin/novad"

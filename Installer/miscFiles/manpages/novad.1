@@ -1,0 +1,19 @@
+.TH NOVAD "1" "2013" "12.12"
+
+.SH NAME
+.B novad
+\- The Nova daemon process
+
+.SH SYNOPSIS
+.B novad
+
+.SH DESCRIPTION
+.PP
+.I novad
+is the main process within Nova. This process monitors local network traffic, monitors traffic from the haystack and doppelgangeg honeyd instances, and performs classifications on hosts in contact with the host running Nova. Using various networking metrics, ClassificationEngine will use an Approximate Nearest Neighbor algorithm to determine whether a given host is hostile or benign. This process will communicate with the GUI to allow for visualizing the information in a useful manner.
+
+.SH COPYRIGHT
+.PP
+Nova is Copyright (c) 2011 - 2013 DataSoft Corporation
+.PP
+Nova is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. Nova is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with Nova. If not, see <http://www.gnu.org/licenses/>.

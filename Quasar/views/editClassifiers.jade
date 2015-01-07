@@ -1,0 +1,114 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+include mixins/headers
+
+extends layout
+
+block headerAdditions
+  link(rel='stylesheet', type='text/css', href='configstyle.css', media='screen')
+
+  link(rel='stylesheet', type='text/css', href='novagrid.css', media='screen')
+  script(type='text/javascript', src='scripts/NovaGrid.js')
+  
+  script.
+    var grid;
+
+    function init(){
+        var columns = new Array();
+        columns.push({name: 'Index'});
+        columns.push({name: 'Type'});
+        columns.push({name: 'Mode'});
+        columns.push({name: 'Weight'});
+
+        grid = new NovaGrid(columns, 0, classifierTable, 'grid', true);
+
+        var classifiers = !{JSON.stringify(classifiers)};
+        var index = 0;
+        for(i in classifiers)
+        {
+            var classifier = classifiers[i];
+            var row = new Array();
+            row.push(index);
+            index++;
+
+            row.push(classifier.type);
+            row.push(classifier.mode);
+            row.push(classifier.weight);
+        
+            grid.PushEntry(row);
+        }
+    
+        grid.Render();
+    };
+
+    function refreshCallback() {
+        window.location.reload(true);
+    }
+
+    function deleteClassifier() {
+        var selected = grid.GetSelected();
+
+        if(selected.length != 1)
+        {
+            alert('You must have 1 and only 1 classifier selected for deletion');
+            return;
+        }
+
+        try
+        {
+            now.deleteClassifier(selected[0], refreshCallback);
+        }
+        catch(err)
+        {
+            console.log('Error was: ' + err);
+            alert('Server is down or not responding to this request');
+        }
+    }
+
+    function editClassifier() {
+        var selected = grid.GetSelected();
+
+        if(selected.length != 1)
+        {
+            alert('You must have 1 and only 1 classifier selected for editing');
+            return;
+        }
+
+        window.location = '/editClassifier?classifierIndex=' + selected[0];
+    }
+
+  
+block content
+  +header("Current Classifieres")
+    div.novaGrid
+      div#classifierTable
+ 
+    br
+    
+    br
+    button.button(onclick='window.location ="/editClassifier"')
+      img.buttonIcon(src='images/add.png');
+      span.buttonSpan Add Classifier
+    
+    button.button(onclick='editClassifier()')
+      img.buttonIcon(src='images/edit.png');
+      span.buttonSpan Edit Classifiers
+
+    button.button(onclick='deleteClassifier()')
+      img.buttonIcon(src='images/delete.png');
+      span.buttonSpan Delete Classifiers
+

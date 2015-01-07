@@ -1,0 +1,594 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-   Nova is free software: you can redistribute it and/or modify
+//-    it under the terms of the GNU General Public License as published by
+//-    the Free Software Foundation, either version 3 of the License, or
+//-    (at your option) any later version.
+//- 
+//-    Nova is distributed in the hope that it will be useful,
+//-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-    GNU General Public License for more details.
+//- 
+//-    You should have received a copy of the GNU General Public License
+//-    along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+doctype 5
+html(lang='en')
+  head
+    meta(charset='utf-8')
+    link(rel='stylesheet', type='text/css', href='style.css', media='screen')
+    link(rel='stylesheet', type='text/css', href='/dojo/dijit/themes/claro/claro.css', media='screen')
+    link(rel='stylesheet', type='text/css', href='/dojo/dojox/grid/resources/Grid.css')
+    link(rel='stylesheet', type='text/css', href='/dojo/dojox/grid/resources/claroGrid.css')
+    link(rel='shortcut icon', href='/favicon.ico')
+
+    script(type='text/javascript', src='/nowjs/now.js')
+    script(type="text/javascript", src="/scripts/jquery.js")
+    script(type='text/javascript', src='/dojo/dojo/dojo.js', data-dojo-config='async:true, parseOnLoad:true')
+    script
+      // Method to render the left side connection status list;
+      // this list will contain a clientId and two graphics, each
+      // graphic indicating the status of novad and the haystack,
+      // respectively  
+      var notifications;
+      var hostileEvents;
+      var eventList = !{EVENTS};
+
+      function getEventCount(client)
+      {
+        for(var i in eventList)
+        {
+          if(eventList[i].client == client)
+          {
+            return eventList[i].events;
+          }
+        }
+        return '0';
+      }
+
+      now.RenderConnectionsList = function(clients, optional)
+      {
+        var connectionsList = $('#connectionsList');
+        
+        connectionsList.empty();
+       
+        if(clients == undefined || clients == '' || clients.length == 0)
+        {
+          var tr = document.createElement('tr');
+          tr.id = 'deleteMe';
+          
+          var td0 = document.createElement('td');
+          td0.innerHTML = 'No clients connected';
+          
+          tr.appendChild(td0);
+          
+          connectionsList.append(tr);
+          console.log('after connectionsList.append');
+        }
+        else
+        {
+          for(var i in clients)
+          {
+            if(clients[i] != undefined && clients[i] != '')
+            {
+              var tr = document.createElement('tr');
+              tr.id = clients[i];
+              tr.style.minHeight = '17px';
+              tr.style.maxHeight = '17px';
+              
+              var td0 = document.createElement('td');
+              var label = document.createElement('label');
+              label.innerHTML = clients[i];
+              label.setAttribute('style', 'float: left');
+              td0.appendChild(label);
+              
+              var td1 = document.createElement('td');
+              var novadStatus = document.createElement('img');
+              novadStatus.width = '16';
+              novadStatus.height = '16';
+              novadStatus.id = clients[i] + 'nova';
+              
+              now.IsNovadUp(clients[i], function(client, status){
+                if(status == 'true')
+                {
+                  novadStatus.src = 'images/Ngreendot.png';
+                  novadStatus.alt = 'Classification is on for ' + client;
+                } 
+                else if(status == 'false')
+                {
+                  novadStatus.src = 'images/Nreddot.png';
+                  novadStatus.alt = 'Classification is off for ' + client;
+                } 
+                else
+                {
+                  novadStatus.src = 'images/Ngreydot.png';
+                  novadStatus.alt = 'No Classification status for ' + client; 
+                }
+              });
+              
+              td1.appendChild(novadStatus);
+              
+              var haystackStatus = document.createElement('img');
+              haystackStatus.width = '16';
+              haystackStatus.height = '16';
+              haystackStatus.id = clients[i] + 'haystack';
+                
+              now.IsHaystackUp(clients[i], function(client, status){
+                if(status == 'true')
+                {
+                  haystackStatus.src = 'images/Hgreendot.png';
+                  haystackStatus.alt = 'Haystack is on for ' + client;
+                } 
+                else if(status == 'false')
+                {
+                  haystackStatus.src = 'images/Hreddot.png';
+                  haystackStatus.alt = 'Haystack is off for ' + client;
+                } 
+                else
+                {
+                  haystackStatus.src = 'images/Hgreydot.png';
+                  haystackStatus.alt = 'No Haystack status for ' + client;
+                }
+              });
+              td1.appendChild(haystackStatus);
+              
+              var events = document.createElement('div');
+              events.id = clients[i] + 'events';
+              if(document.URL.indexOf('/hostile') != -1)
+              {
+                now.UpdateEventCounter(clients[i], '0');
+                events.innerHTML = '0';
+                events.setAttribute('style', 'border: 2px; border-radius: 20px; width: 7px; background: #62FF75; font-weight: bold; color: white; text-align: center; float:right; padding-left: 2px; padding-right: 2px;');
+              }
+              else
+              {
+                events.innerHTML = parseInt(getEventCount(clients[i]));
+                if(parseInt(getEventCount(clients[i])) > 0)
+                {
+                  events.setAttribute('style', 'border: 2px; border-radius: 20px; width: 7px; background: #FF5447; font-weight: bold; color: white; text-align: center; float:right; padding-left: 2px; padding-right: 2px;');
+                }
+                else
+                {
+                  events.setAttribute('style', 'border: 2px; border-radius: 20px; width: 7px; background: #62FF75; font-weight: bold; color: white; text-align: center; float:right; padding-left: 2px; padding-right: 2px;');
+                }
+              }
+              td1.appendChild(events);
+              
+              var td2 = document.createElement('td');
+              td2.style.float = 'right';
+              var removeButton = document.createElement('label');
+              removeButton.innerHTML = 'X';
+              removeButton.setAttribute('onclick', 'removeMe("' + clients[i] + '")');
+              removeButton.style.float = 'left';
+              removeButton.style.textAlign = 'center';
+              removeButton.style.border = '1px solid';
+              removeButton.style.background = 'red';
+              td2.appendChild(removeButton);
+              
+              tr.appendChild(td0);
+              tr.appendChild(td1);
+              tr.appendChild(td2);
+              
+              connectionsList.append(tr);
+            }
+          }
+        }
+      }
+      
+      now.UpdateConnectionsList = function(clientId, action)
+      {
+        var connectionsList = $('#connectionsList');
+        
+        switch(action)
+        {
+          case 'add':
+            if($('#' + clientId).size())
+            {
+              return now.UpdateConnectionsList(clientId, 'updateStatus');
+            }
+
+            var tr = document.createElement('tr');
+            tr.id = clientId;
+            tr.style.minHeight = '17px';
+            tr.style.maxHeight = '17px';
+            
+            var td0 = document.createElement('td');
+            var label = document.createElement('label');
+            label.innerHTML = clientId;
+            label.setAttribute('style', 'float: left');
+            td0.appendChild(label);
+            
+            var td1 = document.createElement('td');
+            var novadStatus = document.createElement('img');
+            novadStatus.width = '16';
+            novadStatus.height = '16';
+            novadStatus.id = clientId + 'nova';
+            
+            now.IsNovadUp(clientId, function(client, status){
+              if(status == 'true')
+              {
+                novadStatus.src = 'images/Ngreendot.png';
+                novadStatus.alt = 'Classification is on for ' + client;
+              } 
+              else if(status == 'false')
+              {
+                novadStatus.src = 'images/Nreddot.png';
+                novadStatus.alt = 'Classification is off for ' + client;
+              }
+              else
+              {
+                novadStatus.src = 'images/Ngreydot.png';
+                novadStatus.alt = 'No Classification status for ' + client; 
+              }
+            });
+            
+            td1.appendChild(novadStatus);
+            
+            var haystackStatus = document.createElement('img');
+            haystackStatus.width = '16';
+            haystackStatus.height = '16';
+            haystackStatus.id = clientId + 'haystack';
+              
+            now.IsHaystackUp(clientId, function(client, status){
+              if(status == 'true')
+              {
+                haystackStatus.src = 'images/Hgreendot.png';
+                haystackStatus.alt = 'Haystack is on for ' + client;
+              } 
+              else if(status == 'false')
+              {
+                haystackStatus.src = 'images/Hreddot.png';
+                haystackStatus.alt = 'Haystack is off for ' + client;
+              } 
+              else
+              {
+                haystackStatus.src = 'images/Hgreydot.png';
+                haystackStatus.alt = 'No Haystack status for ' + client;
+              }
+            });
+            td1.appendChild(haystackStatus);
+            
+            var events = document.createElement('div');
+            events.id = clientId + 'events';
+            events.innerHTML = '0';
+            events.setAttribute('style', 'border: 2px; border-radius: 20px; width: 7px; background: #62FF75; font-weight: bold; color: white; text-align: center; float:right; padding-left: 2px; padding-right: 2px;');
+            td1.appendChild(events);
+            
+            var td2 = document.createElement('td');
+            td2.style.float = 'right';
+            var removeButton = document.createElement('label');
+            removeButton.innerHTML = 'X';
+            removeButton.setAttribute('onclick', 'removeMe("' + clientId + '")');
+            removeButton.style.float = 'left';
+            removeButton.style.textAlign = 'center';
+            removeButton.style.border = '1px solid';
+            removeButton.style.background = 'red';
+            td2.appendChild(removeButton);
+            
+            tr.appendChild(td0);
+            tr.appendChild(td1);
+            tr.appendChild(td2);
+
+            connectionsList.append(tr);
+            
+            if($('#deleteMe').size())
+            {
+              $('#deleteMe').remove();
+            }
+            
+            break;
+          case 'remove':
+            if($('#' + clientId).size())
+            {
+              $('#' + clientId).remove();
+              if(connectionsList.children().length == 0)
+              {
+                var label = document.createElement('label');
+                label.id = 'deleteMe';
+                label.innerHTML = 'No clients connected';
+                connectionsList.appendChild(label);
+              }
+            }
+            break;
+          case 'updateStatus':
+            now.IsNovadUp(clientId, function(client, status){
+              if(status == 'true')
+              {
+                var newAttr = {src:'images/Ngreendot.png', alt:('Classification is on for ' + client)};
+                $('#' + clientId + 'nova').attr(newAttr);
+              }
+              else if(status == 'false')
+              {
+                var newAttr = {src:'images/Nreddot.png', alt:('Classification is off for ' + client)};
+                $('#' + clientId + 'nova').attr(newAttr);
+              }
+              else
+              {
+                var newAttr = {src:'images/Ngreydot.png', alt:('No Classification status for ' + client)};
+                $('#' + clientId + 'nova').attr(newAttr);
+              }
+            });
+            now.IsHaystackUp(clientId, function(client, status){
+              if(status == 'true')
+              {
+                document.getElementById(clientId + 'haystack').src = 'images/Hgreendot.png';
+                document.getElementById(clientId + 'haystack').alt = 'Haystack is on for ' + client;
+              }
+              else if(status == 'false')
+              {
+                document.getElementById(clientId + 'haystack').src = 'images/Hreddot.png';
+                document.getElementById(clientId + 'haystack').alt = 'Haystack is off for ' + client;
+              }
+              else
+              {
+                document.getElementById(clientId + 'haystack').src = 'images/Hgreydot.png';
+                document.getElementById(clientId + 'haystack').alt = 'No Haystack status for ' + client;
+              }
+            });
+            break;
+          case 'updateEvents':
+            if(document.URL.indexOf('/hostile') == -1)
+            { 
+              now.GetEventCount(clientId, function(events){
+                document.getElementById(clientId + 'events').innerHTML = (parseInt(events) == null ? '0' : parseInt(events));
+                if(parseInt(events) > 0)
+                {
+                  document.getElementById(clientId + 'events').setAttribute('style', 'border: 2px; border-radius: 20px; background: #FF5447; font-weight: bold; color: white; text-align: center; float: right; padding-left: 2px; padding-right: 2px;');
+                }
+                else
+                {
+                  document.getElementById(clientId + 'events').setAttribute('style', 'border: 2px; border-radius: 20px; background: #62FF75; font-weight: bold; color: white; text-align: center; float: right; padding-left: 2px; padding-right: 2px;');
+                }
+              });
+            }
+            else
+            {
+              now.ClearConnectionsListEvents();
+            }
+            break;
+          case 'clear':
+            while(divConnectionsList.hasChildNodes())
+            {
+              divConnectionsList.removeChild(divConnectionsList.lastChild); 
+            }
+            break;
+          default:
+            console.log('UpdateConnectionsList called with unknown action ' + action + ', doing nothing');
+            break;
+        }
+        
+        divConnectionsList = null;
+      }
+      
+      now.UpdateNotificationsButton = function(action)
+      {
+        if(action == 'new')
+        {
+          if(document.URL.indexOf('/notifications') > -1)
+          {
+            while(document.getElementById('notificationsDiv').hasChildNodes())
+            {
+              document.getElementById('notificationsDiv').removeChild(document.getElementById('notificationsDiv').lastChild);
+            }
+            now.GetNotifications(populateNotifications);
+          }
+          else
+          {
+            notifications++;
+            now.UpdateNotificationsCount(notifications);
+            if(notifications > 0)
+            {
+              document.getElementById('notify').setAttribute('style', 'background: #62FF75');
+            }
+            document.getElementById('notify').innerHTML = 'Notifications (' + notifications + ')';
+          }
+        }
+        else if(action == 'read')
+        {
+          notifications = 0;
+          now.UpdateNotificationsCount(0);
+          document.getElementById('notify').removeAttribute('style');
+          document.getElementById('notify').innerHTML = 'Notifications (' + notifications + ')';
+        }
+        else
+        {
+          console.log('UpdateNotificationsButton received an unknown action "' + action + '", doing nothing');
+        }
+      }
+      
+      now.SetUpNotificationsButton = function()
+      {
+        now.GetNotifyCount(function(count){
+          notifications = count;
+          document.getElementById('notify').innerHTML = 'Notifications (' + notifications + ')';
+          if(notifications > 0)
+          {
+            document.getElementById('notify').setAttribute('style', 'background: #62FF75');
+          }
+        });
+      }
+      
+      now.SetUpHostileEventsButton = function(optional)
+      {
+        now.GetHostileEventsCount(function(count){
+          hostileEvents = count;
+          document.getElementById('hostileButton').innerHTML = 'Hostile Events (' + hostileEvents + ')';
+          if(hostileEvents > 0)
+          {
+            document.getElementById('hostileButton').setAttribute('style', 'background: #FF5447');
+          }
+          if(typeof optional == 'function')
+          {
+            optional;
+          }
+        });
+      }
+      
+      now.ClearConnectionsListEvents = function()
+      {
+        now.ClearEventCounter(function(){
+          for(var i in clients)
+          {
+            if(clients[i] != undefined && clients[i] != '')
+            {
+              now.UpdateConnectionsList(clients[i], 'updateEvents');
+            }
+          }
+        });
+      }
+      
+      now.UpdateHostileEventsButton = function(action, optional)
+      {
+        if(action == 'new')
+        {
+          if(document.URL.indexOf('/hostile') > -1)
+          {
+            hostileEvents = 0;
+            now.UpdateHostileEventsCount(0);
+            document.getElementById('hostileButton').removeAttribute('style');
+            document.getElementById('hostileButton').innerHTML = 'Hostile Events (' + hostileEvents + ')';
+          }
+          else
+          {
+            hostileEvents++;
+            now.UpdateHostileEventsCount(hostileEvents);
+            if(hostileEvents > 0)
+            {
+              document.getElementById('hostileButton').setAttribute('style', 'background: #FF5447');
+            }
+            document.getElementById('hostileButton').innerHTML = 'Hostile Events (' + hostileEvents + ')';
+          }
+        }
+        else if(action == 'read')
+        {
+          hostileEvents = 0;
+          now.UpdateHostileEventsCount(0);
+          document.getElementById('hostileButton').removeAttribute('style');
+          document.getElementById('hostileButton').innerHTML = 'Hostile Events (' + hostileEvents + ')';
+        }
+        else
+        {
+          console.log('UpdateHostileEventsButton received an unknown action "' + action + '", doing nothing');
+        }
+      }
+      
+      function removeMe(client)
+      {
+        if(typeof now.UpdateClientsList == 'function')
+        {
+          now.UpdateClientsList(client, 'remove');
+        }        
+        if(typeof now.UpdateConnectionsList == 'function')
+        {
+          now.UpdateConnectionsList(client, 'remove');
+        }
+        if(typeof now.ClearFromNovaClients == 'function')
+        {
+          now.ClearFromNovaClients(client);
+        }
+        if(typeof now.ClearFromClientSide == 'function')
+        {
+          now.ClearFromClientSide(client);
+        }
+      }
+      
+      now.ClearFromClientSide = function(client)
+      {
+        if(message != undefined && message.id != undefined)
+        {
+          if(message.id.indexOf(client + ':') != -1)
+          {
+            var regex = new RegExp(client + ':', 'i');
+            message.id = message.id.replace(regex, '');
+          }
+          if(document.getElementById('showtargets') != undefined)
+          {
+            document.getElementById('showtargets').value = message.id;
+          }
+        }
+        if(typeof removeAutoconfigElement == 'function')
+        {
+          removeAutoconfigElement(client);
+        }
+        if(document.getElementById('elementHook') != undefined && document.getElementById('schedule' + client) != undefined)
+        {
+          document.getElementById('elementHook').removeChild(document.getElementById('schedule' + client));
+        }
+      }
+      
+      require(['dijit/layout/BorderContainer', 'dijit/layout/TabContainer', 'dijit/layout/ContentPane', 'dijit/form/Button', 'dojo/parser', 'dojox/grid/DataGrid', 'dojox/data/HtmlStore', 'dijit/ProgressBar'],
+        function(ready){
+          dojo.addOnLoad(function(){
+            // Some logging of nowjs stuff
+            now.core.on('disconnect', function() {console.log('Warning: Disconnected from nowjs server.');});
+            
+            dojo.style('appLayout', 'opacity', 0);
+            dojo.fadeOut({node:'splash', delay:0}).play();
+            dojo.style('appLayout', 'visibility', 'visible');
+            dojo.fadeIn({node:'appLayout', delay:0}).play();
+            
+            var sideBarButtons = document.getElementsByClassName("sideBarButton");
+            for (var i in sideBarButtons)
+            {
+                if (!sideBarButtons[i].pathname)
+                {
+                    continue;
+                }
+                
+                if (sideBarButtons[i].pathname == window.location.pathname)
+                {
+                    sideBarButtons[i].className += ' active';
+                    console.log("Enabled button " + sideBarButtons[i]);
+                }
+            }
+          });
+        }
+      );
+    block headerAdditions
+
+  body.claro
+    div#splash(style='position:absolute;left:0px;top:0px;width:100%;height:100%; text-align: center;')
+      // Uncomment below for a simple splash loading screen
+      //h1 Loading... please wait.
+      //img(src="images/novaSplash.png")
+    div#appLayout.demoLayout(data-dojo-type='dijit.layout.BorderContainer', data-dojo-props='design: "headline", region: "center"', style='visibility: hidden')
+      div.centerPanel(data-dojo-type='dijit.layout.ContentPane', data-dojo-props='region: "center", tabPosition: "bottom"')
+        div(data-dojo-type='dijit.layout.ContentPane',title='NOVA', data-dojo-props='splitter: false')
+          block content
+      // Header panel
+      div.edgePanel(data-dojo-type='dijit.layout.ContentPane', data-dojo-props='region: "top", splitter: false')
+        div(data-dojo-type='dijit.layout.BorderContainer',data-dojo-props='design: "sidebar", splitter: false',style='height: 140px;')
+          // Header center
+          div(data-dojo-type='dijit.layout.ContentPane', data-dojo-props='region: "center", splitter: false')    
+            a(href='/')
+              img#eyeIcon(src='images/novaIcon.png',class='align-left', width='100px', height='100px')
+              h1 NOVA: Network Obfuscation and Virtualized Anti-reconnaissance System
+            block topPannelAdditions
+    
+      // Left panel
+      div#leftCol.edgePanel(data-dojo-type='dijit.layout.ContentPane', data-dojo-props='region: "left", splitter: false')
+        block buttonPannelAdditions
+      
+       
+        div(style='text-align:center; font-weight:bold; font-size: 150%;') Status
+        a.sideBarButton(id='hostileButton', href='/hostile') Hostile Events
+        br
+        div(style='text-align:center; font-weight:bold; font-size: 150%;') Configuration
+        a.sideBarButton(href='/config') Client Configuration Options
+        a.sideBarButton(href='/haystack') Client Haystack Autoconfiguration
+        a.sideBarButton(href='/groups') Group Configuration Options
+        a.sideBarButton(href='/schedule') New Scheduled Event
+        a.sideBarButton(href='/listschedule') View Scheduled Events
+        br
+        div(style='text-align:center; font-weight:bold; font-size: 150%;') Documentation
+        a.sideBarButton(href='/about') About Nova
+        a.sideBarButton(id='notify', href='/notifications') Notifications (0)
+        br 
+        div(style='text-align:center; font-weight:bold; font-size: 150%;') Connected Clients
+        table(style='border: 2px solid black; width: 156px; height: 4px; background: #E8A02F;')
+          tbody(id='connectionsList')
+        //a(class="button", href= "logout") Log Out
+        //br
+

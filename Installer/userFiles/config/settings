@@ -1,0 +1,14 @@
+group main
+
+#neighbor 192.168.3.147
+#neighbor 192.168.3.111
+#neighbor 192.168.3.113
+
+key Kn0CKkN0ckN0v4!
+
+message show 4 Failure reading config files
+message show 4 Failure writing config files
+message show 4 Failure reading honeyd files
+message show 4 Failure loading honeyd config files
+message show 4 Unexpected file entries
+message show 4 Honeyd subnets out of range

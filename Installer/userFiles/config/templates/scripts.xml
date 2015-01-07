@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scripts>
+	<script>
+		<name>Linux Syslogd</name>
+		<service>syslog</service>
+		<osclass>Linux | Linux</osclass>
+		<path>bash /usr/share/honeyd/scripts/linux/syslogd.sh $ipsrc $sport $ipdst $dport</path>
+		<defaultprotocol>udp</defaultprotocol>
+		<defaultport>514</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>false</configurable>
+	</script>
+	<script>
+		<name>Linux Cyrus-Imapd</name>
+		<service>imap</service>
+		<osclass>Linux | Linux</osclass>
+		<path>bash /usr/share/honeyd/scripts/linux/cyrus-imapd.sh $ipsrc $sport $ipdst $dport</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>143</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>true</configurable>
+		<option>
+			<key>CYRUS_VERSION</key>
+			<description>Plain text version string reported in the banner text</description>
+			<value>Cyrus IMAP4 v1.3.1</value>
+			<value>Cyrus IMAP4 v2.0.16</value>
+			<value>Softalk IMAP Server ready</value>
+			<value>Welcome to Binc IMAP</value>
+			<value>Samsung Contact IMAP server</value>
+			<value>Welcome to Arvixe IMAP server</value>
+		</option>
+	</script>
+	<script>
+		<name>Windows Telnet</name>
+		<service>telnet</service>
+		<osclass>Microsoft | Windows</osclass>
+		<path>bash /usr/share/honeyd/scripts/linux/telnetd.sh $ipsrc $sport $ipdst $dport</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>23</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>true</configurable>
+		<option>
+			<key>TELNET_BANNER</key>
+			<description>Banner for the telnet server to report</description>
+			<value>Cyrus IMAP4 v1.3.1</value>
+			<value>Welcome to Microsoft Telnet Server.</value>
+			<value>Microsoft Windows 2000 telnetd</value>
+			<value>Welcome to Microsoft Telnet Service</value>
+			<value>Welcome to GoodTech Telnet Server for Windows 95/98</value>
+			<value>Georgia SoftWorks Telnet Server for Windows NT/2000/XP/2003/Vista Ver 1</value>
+			<value>Windows for Workgroups telnetd</value>
+		</option>
+	</script>
+	<script>
+		<name>Linux Telnet</name>
+		<service>telnet</service>
+		<osclass>Linux | Linux</osclass>
+		<path>bash /usr/share/honeyd/scripts/linux/telnetd.sh $ipsrc $sport $ipdst $dport</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>23</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>true</configurable>
+		<option>
+			<key>TELNET_BANNER</key>
+			<description>Banner for the telnet server to report</description>
+			<value>Cyrus IMAP4 v1.3.1</value>
+			<value>Welcome to SuSE Linux 7.0 (i386) - Kernel 2.4.7 (0).</value>
+			<value>Welcome to SuSE Linux 8.0 (i386) - Kernel 2.4.18-64GB-SMP (8).</value>
+			<value>Linux telnetd</value>
+			<value>PXES Linux Thin Client telnetd</value>
+			<value>DD-WRT telnetd</value>
+			<value>Picotux telnetd</value>
+		</option>
+	</script>
+	<script>
+		<name>Windows FTP</name>
+		<service>ftp</service>
+		<osclass>Microsoft | Windows</osclass>
+		<path>bash /usr/share/honeyd/scripts/win32/win2k/msftp.sh</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>21</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>false</configurable>
+	</script>
+	<script>
+		<name>Linux Bportmapd</name>
+		<service>bmap</service>
+		<osclass>Linux | Linux</osclass>
+		<path>perl /usr/share/honeyd/scripts/unix/general/rpc/bportmapd --proto tcp --host scripts/unix/general/rpc/hosts/debian --srcip $ipsrc --dstip $ipdst --srcport $srcport --dstport $dport --logfile /var/log/h oneyd/bportmapd --logall</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>111</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>false</configurable>
+	</script>
+	<script>
+		<name>Linux FTP</name>
+		<service>ftp</service>
+		<osclass>Linux | Linux</osclass>
+		<path>bash /usr/share/honeyd/scripts/linux/ftp.sh $ipsrc $sport $ipdst $dport</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>21</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>true</configurable>
+		<option>
+			<key>FTPD_VERSION</key>
+			<description>Version string FTP server will report as</description>
+			<value>Cyrus IMAP4 v1.3.1</value>
+			<value>FTP server (Version wu-2.6.0(5)</value>
+			<value>ProFTPD 1.2.4rc1 Server (SuSE)</value>
+			<value>FTP server ready</value>
+			<value>Welcome to the OpenDreambox FTP service</value>
+		</option>
+	</script>
+	<script>
+		<name>Linux SSH</name>
+		<service>ssh</service>
+		<osclass>Linux | Linux</osclass>
+		<path>bash /usr/share/honeyd/scripts/linux/ssh.sh $ipsrc $sport $ipdst $dport</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>22</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>true</configurable>
+		<option>
+			<key>SSH_VERSION</key>
+			<description>Plain text version string reported in the banner text</description>
+			<value>Cyrus IMAP4 v1.3.1</value>
+			<value>SSH-1.99-OpenSSH_2.1.1</value>
+			<value>SSH-1.99-OpenSSH_3.0.2p1</value>
+			<value>SSH-2.0-OpenSSH_5.5p1 Debian-4ubuntu6</value>
+			<value>SSH-2.0-OpenSSH_4.3</value>
+		</option>
+	</script>
+	<script>
+		<name>Linux Qpop</name>
+		<service>pop3</service>
+		<osclass>Linux | Linux</osclass>
+		<path>bash /usr/share/honeyd/scripts/linux/qpop.sh $ipsrc $sport $ipdst $dport</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>110</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>true</configurable>
+		<option>
+			<key>QPOP_VERSION</key>
+			<description>Plain text version string reported in the banner text</description>
+			<value>QPOP (version 2.53)</value>
+			<value>QPOP (version 4.0.3)</value>
+			<value>QPOP Modified by Compaq (version 3)</value>
+			<value>QPOP modified by SCO (version 2.42)</value>
+			<value>QPOP modified by ABN (version 2.42)</value>
+		</option>
+	</script>
+	<script>
+		<name>Linux lpd</name>
+		<service>lpd</service>
+		<osclass>Linux | Linux</osclass>
+		<path>bash /usr/share/honeyd/scripts/linux/lpd.sh $ipsrc $sport $ipdst $dport</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>515</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>false</configurable>
+	</script>
+	<script>
+		<name>Windows httpd</name>
+		<service>http</service>
+		<osclass>Microsoft | Windows</osclass>
+		<path>bash /usr/share/honeyd/scripts/win32/web.sh</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>80</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>false</configurable>
+	</script>
+	<script>
+		<name>Linux Finger</name>
+		<service>finger</service>
+		<osclass>Linux | Linux</osclass>
+		<path>bash /usr/share/honeyd/scripts/linux/fingerd.sh $ipsrc $sport $ipdst $dport</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>79</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>true</configurable>
+		<option>
+			<key>FINGERD_VERSION</key>
+			<description>Banner text reported by fingerd</description>
+			<value>Welcome to Linux version 2.4.7-4GB</value>
+			<value>Welcome to Linux version 2.6</value>
+			<value>Welcome to Linux version 3</value>
+		</option>
+	</script>
+	<script>
+		<name>Unix SNMP</name>
+		<service>snmp</service>
+		<osclass>HP | HP-UX</osclass>
+		<path>perl /usr/share/honeyd/scripts/unix/general/snmp/fake-snmp.pl public private --config=scripts/unix/general</path>
+		<defaultprotocol>udp</defaultprotocol>
+		<defaultport>161</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>false</configurable>
+	</script>
+	<script>
+		<name>Linux httpd</name>
+		<service>http</service>
+		<osclass>Linux | Linux</osclass>
+		<path>tclsh /usr/share/honeyd/scripts/linux/httpd/httpd.tcl $ipsrc $sport $ipdst $dport</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>80</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>true</configurable>
+		<option>
+			<key>HTTPD_RESPONSE_FOLDER</key>
+			<description>Folder containing templates for HTTP responses</description>
+			<value>scripts/linux/httpd/responses/apache</value>
+			<value>scripts/linux/httpd/responses/netboot</value>
+		</option>
+		<option>
+			<key>HTTPD_SECURE_FILES</key>
+			<description>List of files that will require a password to access</description>
+			<value>sysStatus.shtml synOpStatus.shtml sysCfg.shtml synNwCfg.shtml acctSetup.shtml serPortCfg.shtml pwrPortCfg.shtml pwrAutoPing.shtml log.shtml help_text.html</value>
+		</option>
+		<option>
+			<key>HTTPD_SERVER_VERSION</key>
+			<description>Version to be reported in HTTP headers</description>
+			<value>Apache/1.3.23 (Unix) (SuSE/Linux) ApacheJServ/1.2.2 mod_fastcgi/2.2.2 mod_perl/1.34 PHP/4.1.0 mod_ssl/2.8.7 OpenSSL/0.9.6c</value>
+			<value>Apache/1.3.12 (Unix) (SuSE/Linux) ApacheJServ/1.1.2 mod_fastcgi/2.2.2 mod_perl/1.24 PHP/4.0.0 mod_ssl/2.6.5 OpenSSL/0.9.5a</value>
+			<value>Apache/2.2.20 (Ubuntu)</value>
+			<value>SonicWALL</value>
+			<value>Apache/2.2.17 (Win32)</value>
+			<value>Apache/2.2.6 (Win32) DAV/2 SVN/1.4.5 PHP/5.2.4 mod_python/3.2.10 Python/2.4.4</value>
+			<value>CANON HTTP Server Ver2.30</value>
+			<value>CANON HTTP Server Ver2.21</value>
+			<value>Synaccess</value>
+			<value>Microsoft-IIS/5.1</value>
+			<value>Apache/2.2.3 (Red Hat)</value>
+			<value>Apache</value>
+			<value>thttpd/2.25b 29dec2003</value>
+			<value>GoAhead-Webs</value>
+			<value>Virata-EmWeb/R6_0_3</value>
+		</option>
+	</script>
+	<script>
+		<name>Telnet Router</name>
+		<service>telnet</service>
+		<osclass/>
+		<path>perl /usr/share/honeyd/scripts/embedded/router-telnet.pl</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>23</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>false</configurable>
+	</script>
+	<script>
+		<name>Linux Sendmail</name>
+		<service>smtp</service>
+		<osclass>Linux | Linux</osclass>
+		<path>bash /usr/share/honeyd/scripts/linux/sendmail.sh $ipsrc $sport $ipdst $dport</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>25</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>true</configurable>
+		<option>
+			<key>SENDMAIL_VERSION</key>
+			<description>Plain text version string reported in the banner text</description>
+			<value>Sendmail 8.10.2/8.10.2/SuSE Linux 8.10.0-0.3</value>
+			<value>Sendmail 8.12.2/8.12.2/SuSE Linux 8.12.0-0.3</value>
+			<value>Welcome to the mail server.</value>
+			<value>SMTP Proxy Server Ready</value>
+		</option>
+	</script>
+	<script>
+		<name>Linux Squid</name>
+		<service>squid-snmp</service>
+		<osclass>Linux | Linux</osclass>
+		<path>bash /usr/share/honeyd/scripts/linux/squid.sh $ipsrc $sport $ipdst $dport</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>3128</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>true</configurable>
+		<option>
+			<key>SQUID_VERSION</key>
+			<description>Plain text version string reported in the banner text</description>
+			<value>Squid/2.2.STABLE2</value>
+			<value>Squid/2.4.STABLE3</value>
+			<value>Squid http proxy</value>
+		</option>
+	</script>
+	<script>
+		<name>Linux Echo</name>
+		<service>echo</service>
+		<osclass>Linux | Linux</osclass>
+		<path>bash /usr/share/honeyd/scripts/linux/echo.sh $ipsrc $sport $ipdst $dport</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>7</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>false</configurable>
+	</script>
+	<script>
+		<name>Netbios Name Service</name>
+		<service>nbns</service>
+		<osclass>Microsoft | Windows</osclass>
+		<path>python /usr/share/honeyd/scripts/win32/nbns.py $ipdst</path>
+		<defaultprotocol>udp</defaultprotocol>
+		<defaultport>137</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>true</configurable>
+		<option>
+			<key>NAMES_PATH</key>
+			<description>Path to the names file</description>
+			<value>names</value>
+		</option>
+	</script>
+	<script>
+		<name>mDNS</name>
+		<service>mdns</service>
+		<osclass>Linux | Linux</osclass>
+		<path>python /usr/share/honeyd/scripts/linux/mdns/mdns.py $ipdst</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>5353</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>true</configurable>
+		<option>
+			<key>NAMES_PATH</key>
+			<description>Path to the names file</description>
+			<value>names</value>
+		</option>
+	</script>
+	<script>
+		<name>MySQL (send host not privileged error)</name>
+		<service>mysql</service>
+		<osclass> Linux | Linux </osclass>
+		<path>python /usr/share/honeyd/scripts/linux/mysql.py</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>3306</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>false</configurable>
+	</script>
+	<script>
+		<name>MS SQL </name>
+		<service>mssql</service>
+		<osclass> Microsoft | Windows </osclass>
+		<path>python /usr/share/honeyd/scripts/win32/mssql.py</path>
+		<defaultprotocol>tcp</defaultprotocol>
+		<defaultport>1433</defaultport>
+		<broadcast>false</broadcast>
+		<configurable>false</configurable>
+	</script>
+	<script>
+		<name>NBNS WPAD Query</name>
+		<service>nbns</service>
+		<osclass> Microsoft | Windows </osclass>
+		<path>python /usr/share/honeyd/scripts/broadcasts/nbns-wpad-query.py</path>
+		<defaultprotocol>udp</defaultprotocol>
+		<defaultport>137</defaultport>
+		<broadcast>true</broadcast>
+		<configurable>false</configurable>
+	</script>
+	<script>
+		<name>SMB Autofail</name>
+		<service>smb</service>
+		<osclass>Microsoft | Windows</osclass>
+		<path>python /usr/share/honeyd/scripts/misc/smb-autofail.py $ipdst</path>
+        <defaultprotocol>tcp</defaultprotocol>
+        <defaultport>445</defaultport>
+        <broadcast>false</broadcast>
+		<configurable>true</configurable>
+		<option>
+			<key>TIME_ZONE</key>
+			<description>Minutes from UTC that the server is</description>
+            <value>480</value>
+			<value>420</value>
+            <value>360</value>
+            <value>300</value>
+            <value>240</value>
+		</option>
+		<option>
+			<key>PRIMARY_DOMAIN</key>
+			<description>The domain name that the server resides in</description>
+			<value>WORKGROUP</value>
+            <value>CORPORATE</value>
+		</option>
+		<option>
+			<key>NATIVE_OS</key>
+			<description>The OS that the server running uses</description>
+			<value>Windows Server 2003 R2 3790 Service Pack 2</value>
+            <value>Unix</value>
+		</option>
+		<option>
+			<key>LAN_MANAGER</key>
+			<description>The server application that hosts the SMB share</description>
+			<value>Windows Server 2003 R2 5.2</value>
+			<value>Samba 4.0.2</value>
+            <value>Samba 3.6.3</value>
+		</option>
+	</script>
+</scripts>

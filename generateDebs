@@ -1,0 +1,50 @@
+#!/bin/bash
+
+cleanup()
+{
+	echo "Quitting debian package generation..."
+	exit 0
+}
+
+set -e
+
+trap cleanup SIGINT
+
+echo -e "Remember to update debian/changelog with current version and notes."
+
+if [ -z $1 ]; then
+	echo -e "Using default version number in version.txt..."
+	VERSION=$(cat Installer/userFiles/config/version.txt)
+else
+	VERSION=$1
+fi
+
+PACKAGE="nova_$VERSION"
+
+echo "Package name is $PACKAGE"
+
+rm -f configure
+make clean
+rm -fr Quasar/node_modules
+
+#cd into the directory where the script is
+cd "$(dirname "$PACKAGE")"
+
+# copy the files into a staging directory
+rm -rf $PACKAGE
+rm -f ../$PACKAGE.orig.tar.gz
+mkdir $PACKAGE
+cp -a $(ls -1 | grep -v $PACKAGE | grep -v "debian") $PACKAGE
+
+#tarball it up!
+tar -zcf ../$PACKAGE.orig.tar.gz $PACKAGE
+
+#remove the staging directory
+rm -rf $PACKAGE
+
+#Produce the debian package
+dpkg-buildpackage -k7F9F2E1F
+
+# Use this to make a signed source package for the PPA
+#debuild -S -k7F9F2E1F
+

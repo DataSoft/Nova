@@ -1,0 +1,84 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#E4F2FF"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context=".MainActivity" >
+
+    <EditText
+        android:id="@+id/credID"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:textSize="40sp"
+        android:hint="@string/credID"
+        android:imeOptions="actionNext"
+        android:inputType="text" >
+        <requestFocus />
+    </EditText>
+
+    <EditText
+        android:id="@+id/credPW"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:hint="@string/credPW"
+        android:textSize="40sp"
+        android:inputType="textPassword" />
+    
+    <EditText
+        android:id="@+id/credIP"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+    	android:textSize="40sp"
+        android:hint="@string/credIP"
+        android:inputType="textUri" />
+    
+    <EditText
+        android:id="@+id/credPort"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+    	android:textSize="40sp"
+        android:hint="@string/credPort"
+        android:inputType="number" />
+
+    <CheckBox 
+        android:id="@+id/keepLogged"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:hint="@string/keepLogged"
+        android:onClick="onCheckboxClicked"
+        android:textSize="40sp" />
+    
+    <Button
+        android:id="@+id/ceresConnect"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+    	android:textSize="40sp"        
+        android:text="@string/ceresConnect" />
+
+    <EditText
+        android:id="@+id/notify"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clickable="false"
+        android:ems="10"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
+        android:gravity="center_vertical|top"
+        android:inputType="none"
+        android:text="@string/error"
+        android:textColor="#FF0000"
+        android:textColorHint="@android:color/primary_text_light"
+        android:visibility="invisible"
+    	android:textSize="30sp" />
+
+</LinearLayout>

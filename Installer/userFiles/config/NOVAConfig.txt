@@ -1,0 +1,542 @@
+############################################
+# INTERFACE #
+############################################
+#
+# This is the local network device that Nova will listen on.
+# You can view your list of available interfaces by running:
+#
+# ifconfig -a
+#
+# If the interface "default" is specified, the system will
+# use the interface that contains the default route.
+# Otherwise, this variable takes the string representation 
+# of the device as found through ifconfig.
+#
+# EXAMPLE:
+#INTERFACE eth0
+INTERFACE default
+
+############################################
+# KNN_NORMALIZATION
+############################################
+#
+# Parsed from CSV into array determining the
+# normalization functions for the corresponding
+# classification variable
+# 0 = NONORM // No data normalization; feature must already be within [0...1]
+# 1 = LINEAR // Simple linear normalization by dividing data by max
+# 2 = LINEAR_SHIFT // Shifts min value to 0 before doing linear normalization
+# 3 = LOGARITHMIC // Larger outlier values will have less effect
+KNN_NORMALIZATION 2,2,3,3,3,3,3,3,3,2,2,2,2,2
+
+############################################
+# K #
+############################################
+#
+# Number of nearest neighbors to check.
+#
+# EXAMPLE:
+#K 3
+K 3
+
+############################################
+# EPS #
+############################################
+#
+# Error bound for the nearest neighbor search,
+# 0 will imply exact nearest neighbors. Increasing
+# EPS will decrease accuracy but increase running 
+# time of the the nearest neigbor search.
+#
+# EXAMPLE:
+#EPS 0.01
+EPS 0.01
+
+############################################
+# CLASSIFICATION_TIMEOUT #
+############################################
+#
+# Time in seconds to wait between 
+# suspect classifications. If this value is
+# set to 0, then continuous classification
+# mode will be enabled, which will reclassify
+# a suspect when any new information is obtained.
+# However, doing this may result in loss of 
+# performance and should be done at your own risk.
+#
+# EXAMPLE:
+#CLASSIFICATION_TIMEOUT 5
+CLASSIFICATION_TIMEOUT 1
+
+############################################
+# THINNING_DISTANCE #
+############################################
+# 
+# This sets how much the training data points
+# are thinned out before writing them to the
+# DB file. Any consecutive points who's squarred 
+# distance is less than this value will be removed.
+#
+# A value of 0 will disable point thinning
+# 
+# Distances are based off of a normalized 
+# data set, so distances will be < 1
+# EXAMPLE
+# THINNING_DISTANCE .0001
+THINNING_DISTANCE 0.001
+
+############################################
+
+############################################
+# CLASSIFICATION_THRESHOLD #
+############################################
+#
+# Value of classification to define split 
+# between hostile / benign suspects. A
+# smaller value could result in more false
+# positives. 
+#
+# EXAMPLE:
+#CLASSIFICATION_THRESHOLD .5
+CLASSIFICATION_THRESHOLD 0.5
+
+############################################
+# DOPPELGANGER_IP #
+############################################
+#
+# IP address to use for the doppelganger.
+#
+# EXAMPLE:
+#DOPPELGANGER_IP 10.0.0.1
+DOPPELGANGER_IP 10.0.0.1
+
+############################################
+# DOPPELGANGER_INTERFACE #
+############################################
+#
+# Interface to use for the doppelganger.
+#
+# EXAMPLE:
+#DOPPELGANGER_INTERFACE lo
+DOPPELGANGER_INTERFACE lo
+
+############################################
+# DM_ENABLED #
+############################################
+#
+# Enable or disable the doppelganger module.
+# With the doppelganger module enabled, hosts
+# that have been detected as hostile will have
+# a Doppelganger node dynamically rerouted in 
+# front of any legitimate nodes the attacker
+# is trying to access. 
+#
+# 	0: Doppelganger module disabled
+#	1: Doppelganger module enabled
+#
+# EXAMPLE:
+#DM_ENABLED 1
+DM_ENABLED 0
+
+############################################
+# HS_HONEYD_CONFIG #
+############################################
+#
+# Path relative to nova where the HoneyD
+# configuration file resides. This file will
+# be parsed for used IP addresses. 
+# 
+# EXAMPLE:
+#HS_HONEYD_CONFIG config/haystack_honeyd.config
+HS_HONEYD_CONFIG config/haystack_honeyd.config
+
+############################################
+# TCP_TIMEOUT #
+############################################
+#
+# Time in seconds before timing out TCP sessions
+# that weren't torn down properly
+#
+# EXAMPLE:
+#TCP_TIMEOUT 7
+TCP_TIMEOUT 7
+
+############################################
+# TCP_CHECK_FREQ #
+############################################
+#
+# How often in seconds to check for TCP timeouts.
+#
+# EXAMPLE:
+#TCP_CHECK_FREQ 3
+TCP_CHECK_FREQ 3
+
+############################################
+# READ_PCAP #
+############################################
+#D
+# Specify if reading packets in from a PCAP file
+#	0: Do not read in PCAP file
+#	1: Read in PCAP file
+#
+# EXAMPLE:
+#READ_PCAP 0
+READ_PCAP 0
+
+############################################
+# PCAP_FILE #
+############################################
+#
+# Path to PCAP file to read from if READ_PCAP
+# is enabled.
+# 
+# EXAMPLE:
+#PCAP_FILE pcapfile
+PCAP_FILE ../masterPcap
+
+# Logging Stuff #
+
+############################################
+# RSYSLOG_USE #
+############################################
+#
+# Whether to use Rsyslog or not
+#
+RSYSLOG_USE false
+
+############################################
+# RSYSLOG_IP #
+############################################
+#
+# The IP for rsyslog to send messages to 
+# Example:
+# 192.168.0.1
+#
+RSYSLOG_IP 127.0.0.1
+
+############################################
+# RSYSLOG_PORT #
+############################################
+#
+# The port rsyslog will use in combination 
+# with the IP to send messages to:
+#
+RSYSLOG_PORT 514
+
+############################################
+# RSYSLOG_CONNTYPE
+############################################
+#
+# Connection type rsyslog will use to 
+# connect to the server.
+# Example:
+# TCP or UDP
+RSYSLOG_CONNTYPE UDP
+
+############################################
+# SMTP_ADDR #
+############################################
+# 
+# This is the address from which all Nova email alerts
+# will be sent. Should be of the form string @ string . string
+#
+SMTP_ADDR test@example.com
+
+############################################
+# SMTP_PORT #
+############################################
+#
+# The port number that the SMTP server being used
+# for distributing email alerts must be connected to on.
+# Should be an integer.
+#
+SMTP_PORT 465
+
+############################################
+# SMTP_DOMAIN #
+############################################
+#
+# The name of the SMTP server that you will be connecting to.
+# Example: smtp.example.com
+#
+SMTP_DOMAIN smtp.example.com
+
+############################################
+# SMTP_INTERVAL
+############################################
+# 
+# Cron interval value for Nova SMTP alerts
+#
+SMTP_INTERVAL hourly
+
+############################################
+# SMTP_PASS
+############################################
+#
+# SMTP SSL password
+SMTP_PASS examplePass
+
+############################################
+# SMTP_USEAUTH
+############################################
+#
+# Boolean of whether to use authentication parameters
+# for the email alerts or not (basically, using port 25 without
+# username/passwd or using SSL/TLS)
+#
+SMTP_USEAUTH 1
+
+############################################
+# RECIPIENTS #
+############################################
+#
+# A comma delimited list of the email addresses to send email
+# alerts to. 
+# Example:
+# RECIPIENTS first@email.send,second@email.send
+#
+RECIPIENTS first@example.com,second@example.com
+
+############################################
+# SERVICE_PREFERENCES #
+############################################
+#
+# SERVICE: 0 = SYSLOG
+#		   1 = EMAIL
+#
+# LEVELS:  0 = DEBUG 
+#          1 = INFO
+#		   2 = NOTICE
+#          3 = WARNING
+#          4 = ERROR
+#          5 = CRITICAl
+#          6 = ALERT
+#          7 = EMERGENCY
+# (+ | -): Plus indicates use the service at this level or higher,
+#          minus indicates use the service at this level or lower.
+#          If you want to use a particular service for just one level,
+#          omit the + or - entirely.
+# SERVICE:LEVEL(+|-);
+SERVICE_PREFERENCES 0:1+;1:6+;
+
+
+############################################
+# EMAIL_ALERTS_ENABLED
+############################################
+# This will explicitly disable/enable email
+# alerts. You must also set SERVICE_PREFERENCES
+# and the SMTP settings to get email alerts.
+EMAIL_ALERTS_ENABLED 0
+
+
+############################################
+# WHITELIST_FILE #
+############################################
+#
+# File containing whitelisted IP addresses
+#
+WHITELIST_FILE config/whitelist.txt
+
+
+############################################
+# MIN_PACKET_THRESHOLD #
+############################################
+#
+# Suspects will not be classified, or in
+# some cases will be marked as more benign
+# if there was less packets than this seen.
+MIN_PACKET_THRESHOLD 5
+
+############################################
+# CUSTOM_PCAP_FILTER #
+############################################
+# 
+# Advanced option for customizing packets
+# that are classified with NOVA. This will
+# either be &&'d with or replace the auto
+# generated filter depending on CUSTOM_PCAP_FILTER_MODE
+#
+# Leave blank if you don't want a custom filter
+CUSTOM_PCAP_FILTER 
+
+
+############################################
+# CUSTOM_PCAP_FILTER_MODE #
+############################################
+# 
+# 0: Append pcap filter with CUSTOM_PCAP_FILTER
+# 1: Override pcap filter with CUSTOM_PCAP_FILTER
+CUSTOM_PCAP_MODE 0
+
+
+############################################
+# TRAINING_SESSION #
+############################################
+#
+# Folder name for a training capture session
+TRAINING_SESSION null
+
+############################################
+# MANAGE_IFACE_ENABLE #
+############################################
+#
+# Enable management interface; if 0 (false),
+# Quasar will be available on all interfaces.
+# Otherwise, if 1 (true) then Quasar will only
+# be available on localhost/127.0.0.1 and the
+# address of the selected interface
+MANAGE_IFACE_ENABLE 0
+
+############################################
+# WEB_UI_PORT #
+############################################
+#
+# Port for the web interface to run on
+# Note: anything < 1024 requires root to use
+WEB_UI_PORT 8080
+
+############################################
+# WEB_UI_IFACE #
+############################################
+#
+# Interface to access Quasar over.
+WEB_UI_IFACE eth0
+
+############################################
+# CLEAR_AFTER_HOSTILE_EVENT #
+############################################
+# Clear suspect data when there is a hostile event
+CLEAR_AFTER_HOSTILE_EVENT 0
+
+############################################
+# CAPTURE_BUFFER_SIZE #
+############################################
+# Size in bytes of the packet capture buffer. 
+# If you get warnings about dropped packets
+# during high load, try increasing this.
+CAPTURE_BUFFER_SIZE 1048576
+
+############################################
+# MASTER_UI_ENABLED
+############################################
+# Enable attempting to connect to the master UI
+MASTER_UI_ENABLED 0
+
+############################################
+# MASTER_UI_IP
+############################################
+# IP address of the master UI
+MASTER_UI_IP 0.0.0.0
+
+############################################
+# MASTER_UI_RECONNECT_TIME
+############################################
+# Time between connection attempts in case
+# of lost connection (in seconds)
+MASTER_UI_RECONNECT_TIME 10
+
+############################################
+# MASTER_UI_CLIENT_ID
+############################################
+# Client ID. This is the label that will
+# be given to this machine in the master UI
+MASTER_UI_CLIENT_ID nova1
+
+############################################
+# MASTER_UI_PORT
+############################################
+# Port for Pulsar to use. This will be the
+# port that Pulsar listens on and that
+# the user will use to access Pulsar through
+# the browser. Pulsar issues commands to the
+# Quasar instances using MASTER_UI_PORT + 1
+MASTER_UI_PORT 8082
+
+
+############################################
+# CLASSIFICATION_ENGINES
+############################################
+# KNN: Machine learning classification based on training data
+#     See also DATAFILE, FEATURE_WEIGHTS, DATAFILE\
+#
+# THRESHOLD_TRIGGER: Simple hostility based on features being < or > a value
+# 	See also THRESHOLD_HOSTILE_TRIGGERS
+
+CLASSIFICATION_ENGINES KNN;THRESHOLD_TRIGGER;SCRIPT_ALERT
+CLASSIFICATION_CONFIGS /config/CE_0.config;/config/CE_1.config;/config/CE_2.config
+CLASSIFICATION_MODES WEIGHTED;HOSTILE_OVERRIDE;HOSTILE_OVERRIDE
+CLASSIFICATION_WEIGHTS 1;0;0
+
+
+############################################
+# ONLY_CLASSIFY_HONEYPOT_TRAFFIC
+############################################
+ONLY_CLASSIFY_HONEYPOT_TRAFFIC 0
+
+############################################
+# CURRENT_CONFIG
+############################################
+CURRENT_CONFIG sample
+
+############################################
+# IPLIST_PATH
+############################################
+IPLIST_PATH /var/log/honeyd/ipList
+
+############################################
+# TLS Options
+############################################
+# This will enable TLS between Pulsar and the client web browser
+PULSAR_WEBUI_TLS_ENABLED 1
+PULSAR_WEBUI_TLS_CERT /config/keys/ui.crt
+PULSAR_WEBUI_TLS_KEY /config/keys/ui.key
+PULSAR_WEBUI_TLS_PASSPHRASE toor
+
+# This will enable TLS between Quasar and the client web browser
+QUASAR_WEBUI_TLS_ENABLED 1
+QUASAR_WEBUI_TLS_CERT /config/keys/ui.crt
+QUASAR_WEBUI_TLS_KEY /config/keys/ui.key
+QUASAR_WEBUI_TLS_PASSPHRASE toor
+ 
+# This will set up the TLS settings on the Pulsar side for the Quasar/Pulsar connection
+PULSAR_TETHER_TLS_ENABLED 1
+PULSAR_TETHER_TLS_CA /config/keys/ca.crt
+PULSAR_TETHER_TLS_CERT /config/keys/pulsarTether.crt
+PULSAR_TETHER_TLS_KEY /config/keys/pulsarTether.key
+PULSAR_TETHER_TLS_PASSPHRASE toor
+
+# This will cause Quasar to provide a certificate when connecting to Pulsar
+# Note: This certificate must be signed by the Pulsar CA
+QUASAR_TETHER_TLS_ENABLED 1
+QUASAR_TETHER_TLS_CERT /config/keys/quasarTether.crt
+QUASAR_TETHER_TLS_KEY /config/keys/quasarTether.key
+QUASAR_TETHER_TLS_PASSPHRASE toor
+
+TRAINING_DATA_PATH /config/training/data.txt
+
+############################################
+# Quasar start/stop command options
+############################################
+# These are the commands that Quasar will use
+# to start and stop novad and the haystack.
+
+COMMAND_START_NOVAD novacli start nova
+COMMAND_STOP_NOVAD novacli stop nova
+COMMAND_START_HAYSTACK novacli start haystack
+COMMAND_STOP_HAYSTACK novacli stop haystack
+
+# If using upstart, you should use upstart
+# start and stop here instead of the defaults.
+# See the README section on using upstart.
+
+#COMMAND_START_NOVAD sudo start novad
+#COMMAND_STOP_NOVAD sudo stop novad
+#COMMAND_START_HAYSTACK sudo start haystack
+#COMMAND_STOP_HAYSTACK sudo stop haystack
+
+
+# Number of message worker threads in novad
+MESSAGE_WORKER_THREADS 6
+
+# Additional arguements that will be passed to honeyd
+ADDITIONAL_HONEYD_ARGS 

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Ceres</string>
+    <string name="refresh_grid">Refresh Grid</string>
+    <string name="ceresConnect">Log In</string>
+    <string name="credID">Ceres Username</string>
+    <string name="credIP">Ceres IP</string>
+    <string name="credPort">Ceres Port</string>
+    <string name="credPW">Password</string>
+    <string name="keepLogged">Keep my log in info</string>
+    <string name="error">Could not connect to Ceres</string>
+    <string name="success">Connection successful!</string>
+    <string name="ipHeader">IP Address</string>
+    <string name="ifHeader">Interface</string>
+    <string name="ifHeaderSmall">Iface</string>
+    <string name="clHeader">Classification</string>
+    <color name="detailsBackground">#e4f2ff</color>
+    <string name="IPLabel">Suspect IP: </string>
+    <string name="ifaceLabel">Network Interface: </string>
+    <string name="classificationLabel">Classification: </string>
+    <string name="lastSeenLabel">Last Seen:</string>
+
+</resources>

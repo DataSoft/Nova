@@ -1,0 +1,43 @@
+#!/bin/bash
+
+set -e
+
+honeydPath="/usr/bin/honeyd"
+novaPath="$DESTDIR/usr/bin/novad"
+novaHomePath="$DESTDIR/usr/share/nova"
+
+
+if [ ! -f $honeydPath ]
+then
+    echo "File $honeydPath does not exist. Please ensure Honeyd is installed correctly before going on."
+    exit
+fi
+
+if [ ! -f $novaPath ]
+then
+    echo "File $novaPath does not exist. Please ensure novad was correctly installed before going on."
+    exit
+fi
+
+#Set pcap permissions
+setcap 'CAP_NET_RAW+eip CAP_NET_ADMIN+eip CAP_NET_BROADCAST+eip' $honeydPath
+setcap 'CAP_NET_RAW+eip CAP_NET_ADMIN+eip CAP_NET_BROADCAST+eip' $novaPath
+
+#make nova group
+groupadd -f nova
+
+#Make a honeyd log file folder that belongs to 'nobody'
+touch /var/log/honeyd/ipList
+chown -R nobody:nova /var/log/honeyd
+
+# Make sure the UI_Core library gets found
+ldconfig
+
+#restart syslog so the changes will take effect
+service rsyslog restart
+
+#reload sysctl settings.
+sysctl -p /etc/sysctl.conf
+
+chgrp -R nova $novaHomePath
+

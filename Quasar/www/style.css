@@ -1,0 +1,373 @@
+* {
+  font-family: Lucida Sans,Lucida Grande,Arial !important;
+  outline: none !important;
+}
+
+.title {
+  font-size:1.5em;
+  color: #E8A02F;
+  text-shadow: black 1px 1px 1px;
+}
+
+body {
+  margin: 0;
+  padding: 2em;
+  font-size: 13px !important;
+  background: white;
+  color: #333;
+}
+
+p {
+}
+
+.contentBox {
+    background-color: white;
+    overflow: auto;
+	margin-bottom: 10px;
+
+    border: 2px solid #769DC0;
+    box-shadow: 0 0 2px 2px #888;
+    border-radius: 10px;
+
+    padding: 10px;
+}
+
+hr {
+	color: black;
+	background-color: black;
+	height: 3px;
+}
+
+select {
+	padding:3px;
+	margin: 0;
+	-webkit-border-radius:4px;
+	-moz-border-radius:4px;
+	border-radius:4px;
+	-webkit-box-shadow: 0 3px 0 #ccc, 0 -1px #fff inset;
+	-moz-box-shadow: 0 3px 0 #ccc, 0 -1px #fff inset;
+	box-shadow: 0 3px 0 #ccc, 0 -1px #fff inset;
+	background: #E4F2FF;
+	border: 1px solid #769DC0;
+	-moz-appearance:none;
+	cursor:pointer;
+}
+
+div.sideBarHeader {
+	dislay: block;
+	text-align: center;
+	font-size: 18px;
+	margin-bottom: 10px;
+}
+
+
+input[type=button], input[type=submit], button, .button, .sideBarButton {
+  box-shadow: inset 10px 10px 0 rgba(255, 255, 255, 0.4), 3px 3px 4px rgba(0, 0, 0, 0.2);
+  font-size:13px;
+  background-color: #E4F2FF;
+  border: 1px solid #769DC0;
+  border-radius:4px;
+  padding: 2px 4px 4px;
+	text-align: center;
+	text-decoration: none;
+	color: black;
+	margin-left: 2px;
+	margin-right: 2px;
+	
+	-ms-transition:.2s;
+	-moz-transition:.2s;
+	-webkit-transition:.2s;
+	transition:.2s;
+}
+
+.sideBarButton {
+	width: 135px;
+	display:block;
+}
+
+.active {
+	background-color: #E8A02F;
+}
+
+.sideBarButton, .button:link{color: black;}
+.sideBarButton, .button:visited {color:black;}
+
+input[type=button]:hover, input[type=submit]:hover, .sideBarButton:hover, button:hover, .button:hover {
+	-o-transition:.2s;
+	-ms-transition:.2s;
+	-moz-transition:.2s;
+	-webkit-transition:.2s;
+	transition:.2s;
+	background-color: #AFD9FF;
+	color: #000000;
+}
+
+input {
+  border-radius:4px;
+  background-color: #E4F2FF;
+  background-position: center top;
+  background-repeat: repeat-x;
+  border: 1px solid #769DC0;
+  padding: 2px 2px 4px 2px;
+}
+
+h1 {
+  font-size:1.5em;
+}
+
+h2 {
+  font-size:1.2em;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+ 
+#appLayout {
+  height: 100%;
+}
+#leftCol {
+  width: 12em;
+}
+
+.claro .demoLayout .edgePanel {
+  background-color: #D0E9FC;
+}
+
+#viewsChart {
+  width: 550px;
+  height: 550px;
+}
+
+#clientsList {
+  border: 2px solid;
+  border-radius: 12px;
+  background: #E8A02F;
+  width: 250px;
+}
+
+.topcontainer {
+  background: #E4F2FF;
+  border: 1px solid #769DC0;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  opacity: 1;
+  padding-left: 8px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.middlecontainer {
+  background: #E4F2FF;
+  border-left: 1px solid #769DC0;
+  border-right: 1px solid #769DC0;
+  border-bottom: 1px solid #769DC0;
+  opacity: 1;
+  padding-left: 8px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.bottomcontainer {
+  background: #E4F2FF;
+  border-left: 1px solid #769DC0;
+  border-right: 1px solid #769DC0;
+  border-bottom: 1px solid #769DC0;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+  opacity: 1;
+  padding-left: 8px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.topcontainer:hover {
+  background-color: #AFD9FF;
+  color: #000000;
+  cursor: default;
+}
+
+.middlecontainer:hover {
+  background-color: #AFD9FF;
+  color: #000000;
+  cursor: default;
+}
+
+.bottomcontainer:hover {
+  background-color: #AFD9FF;
+  color: #000000;
+  cursor: default;
+}
+
+.white_content{
+	display: none;
+	position: absolute;
+	top: 5%;
+	left: 0%;
+	width: 75%;
+	height: 60%;
+	padding: 16px;
+	border: 16px outset #E8A02F;
+	background-color: white;
+	z-index: 1001;
+	overflow: hidden;
+	overflow-y: scroll;
+}
+
+.portset {
+	border: 2px solid black;
+}
+
+.align-left {float:left; margin: 0 15px 15px 0;}
+
+.buttonIcon {
+	margin-right: 2px;
+	height: 15px;
+	vertical-align:middle;
+}
+
+.buttonIconLeft {
+	margin-right: 2px;
+	height: 15px;
+	vertical-align:middle;
+	float: left;
+}
+
+.buttonSpan {
+	vertical-align:middle;
+}
+
+.pieLegendElementDiv {
+	text-align: left;
+}
+
+.classification_entry {
+	width: 300px;
+	height: 20px;
+	border: 1px solid #759DC0;
+}
+
+.progressBar {
+	background-image: url('images/gradient.jpg');
+	height: 20px;
+	background-repeat: repeat-x;
+	background-color: #ABD6FF;
+	border: 1px solid #759DC0;
+}
+
+#rsyslogPane, #smtpPane, #pulsarPane, #doppelPane, #manifacePane {
+  margin-top: 10px;
+  border: 2px solid black;
+  border-radius: 10px;
+  display: none;
+  background-color: #F1CC91;
+  box-shadow: 0 0 5px 2px #E8A02F inset;
+}
+
+#rsyslogPane *, #smtpPane *, #pulsarPane *, #doppelPane *, #manifacePane * {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  margin-left: 10px;
+}
+
+#secondSlide {
+  display: none;
+  color: red;
+  font-style: italic;
+  background-color: #D0E9FC;
+  width: 600px;
+}
+
+#restartQuasar, #restartNovad {
+  border: 2px solid black;
+  border-radius: 10px;
+  box-shadow: 0 0 5px 2px #AFD9FF inset;
+  background-color: #D0E9FC;
+  width: 725px;
+}
+
+#restartQuasar > *, #restartNovad > * {
+  margin-left: 10px;
+}
+
+.progressText {
+	top: -20px;
+	position: relative;
+	left: 0;
+    text-align: center;
+}
+
+button::-moz-focus-inner {
+  border: 0;
+}
+
+
+.prettyContainer {
+	background-color: white;
+    display: inline-block;
+    vertical-align: top;
+    
+	border: 2px solid #769DC0;
+    box-shadow: 0 0 2px 2px #888;
+    border-radius: 10px;
+
+    margin-right: 20px;
+    margin-left: 20px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    padding: 20px;
+}
+
+.cardContainer {
+	vertical-align: top;
+    display: inline-block;
+}
+
+.cardOuter {
+	background-color: white;
+	position: relative;
+	bottom: 0;
+	top: 0;
+	left: 0;
+	right: 0;
+	display: block;
+	vertical-align: top;
+	margin-bottom: 10px;
+    
+	border: 2px solid #769DC0;
+	border-radius: 15px;
+	border-top-right-radius: 0;
+	border-top-left-radius: 0; 
+	padding: 10px;
+}
+
+.cardHeader {
+	text-align: center;
+	left: 0;
+	right: 0;
+	position: relative;
+	margin: 0;
+	padding-bottom: 5px;
+	padding-top: 5px;
+	background-repeat: repeat-x;
+	background-color: #ABD6FF;
+	background-image: url('images/gradient.jpg');
+	
+	border: 2px solid #769DC0;
+	border-bottom: 0px;
+	border-top-right-radius: 15px;
+	border-top-left-radius: 15px;
+}
+
+.cardSeperator {
+	border: 2px solid #769DC0;
+	border-radius: 15px;
+    background-color: #769DC0;
+}
+    
+.helpIcon {
+    border: 1px solid black;
+    margin-right: 10px;
+}
+

@@ -1,0 +1,89 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-   Nova is free software: you can redistribute it and/or modify
+//-    it under the terms of the GNU General Public License as published by
+//-    the Free Software Foundation, either version 3 of the License, or
+//-    (at your option) any later version.
+//- 
+//-    Nova is distributed in the hope that it will be useful,
+//-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-    GNU General Public License for more details.
+//- 
+//-    You should have received a copy of the GNU General Public License
+//-    along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+extends layout
+
+block content
+  h1 Connected Clients List
+  table(class='listContainer')
+    tbody(id='clientsList')
+  br
+  br
+  h1 Add Group
+  label New Group Name: 
+  input(id='groupName', maxlength='10', size='10', placeholder='Required Field', onkeypress='if(event.keyCode == 13){addGroup(document.getElementById("groupName").value, getMembers())}')
+  button(id='addGroup', onclick='addGroup(document.getElementById("groupName").value, getMembers())') Add Group
+  h1 Current Groups
+  table(id='groupsList')
+    thead
+      tr
+        th Group
+        th Members
+    tbody(id='appendHook')
+  br
+  br
+ 
+block headerAdditions
+  script(type='text/javascript', src='scripts/ConnectionManagement.js')
+  script(type='text/javascript', src='scripts/Groups.js')
+  script
+    var clients = '#{CLIENTS}'.split(':');
+    var theDoc = document;
+    
+    if(clients[0] == '')
+    {
+      clients.length = 0;
+      clients = new Array();
+    }
+    
+    var clientCount = 0;
+    var groups = !{GROUPS};
+  
+    var maintainGroups = new Array();
+
+    now.ready(function(){
+      now.GetClients(now.RenderConnectionsList);
+      now.SetUpNotificationsButton();
+      now.SetUpHostileEventsButton();
+      now.GetClients(function(list) {
+        for(var i in list)
+        {
+          if(list[i] != '')
+          {
+            now.UpdateConnectionsList(list[i], 'updateStatus');  
+          } 
+        }
+      });
+      
+      setUpClientsList('clientsList');
+      setTimeout(function(){
+        setUpClientsList('clientsList');
+      }, 3000);
+      setUpGroups('appendHook');
+      
+      var members = '';
+      
+      for(var i = 0; i < clientCount; i++)
+      {
+        members += clients[i] + ',';
+      }
+      if(members[members.length - 1] == ',')
+      {
+        members = members.substr(0, members.length - 1);
+      }
+      
+      updateGroup('all', members);
+    });

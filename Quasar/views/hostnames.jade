@@ -1,0 +1,105 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+include mixins/headers.jade
+
+extends layout
+
+block headerAdditions
+  link(rel="stylesheet", type="text/css", href="configstyle.css", media="screen")
+
+  link(rel="stylesheet", type="text/css", href="novagrid.css", media="screen")
+  script(type="text/javascript", src="scripts/NovaGrid.js")
+  
+  script.
+    var grid;
+
+    function init(){
+        var columns = new Array();
+        columns.push({name: "Hostname"});
+        columns.push({name: "IP binding"});
+        columns.push({name: "Delete", noEscape: true});
+
+        grid = new NovaGrid(columns, 0, document.getElementById("hostnameTable"), 'grid');
+
+        now.ready(function() {
+            now.GetHostnames(function(err, results) {
+                if (err) {
+                    alert("Error when getting hostnames: " + err);
+                    return;
+                }
+
+                for (var i in results) {
+                    var row = new Array();
+                    row.push(results[i].name);
+                    row.push(results[i].IP);
+                    row.push("<button class='button' onclick='DeleteHostname(\"" + results[i].name + "\")'><img src='images/delete.png' class='buttonIcon'/> <span class='buttonSpan'>Delete</span></button>");
+
+                    grid.PushEntry(row);
+                }
+                
+                grid.Render();
+            });
+
+      });
+    };
+
+    function AddNewHostname() {
+        var hostname = $("#newHostName").val();
+        if (hostname == "") {
+            alert("Hostname can not be blank");
+            return;
+        }
+        now.InsertHostname(hostname, function(err) {
+            if (err) {alert("Error inserting hostname: " + err);}
+            window.location = window.location;
+        });
+    };
+
+    function DeleteHostname(hostname) {
+        now.DeleteHostname(hostname, function(err) {
+            if (err) {alert("Error deleting hostname: " + err)};
+            window.location = window.location;
+        });
+    };
+
+    function clearAllocations() {
+        now.ClearHostnameAllocations(function(err) {
+          if (err) {alert("Error deleting hostname: " + err)};
+          window.location = window.location;
+        });
+    };
+  
+block content
+  +headerWithHelp("Honeypot hostnames", "hostnames")
+    table
+      tr
+        td
+          input#newHostName(type="text", placeholder="Enter new hostname", onkeypress='if(event.keyCode == 13){AddNewHostname()}')
+        td
+          button.button(onclick="AddNewHostname()")
+            img.buttonIcon(src="images/add.png")
+            span.buttonSpan Add Hostname
+    
+  
+    br
+    span#hostnameTable(style="display: inline-block;")
+  
+    br
+    button.button(onclick="clearAllocations()")
+      img.buttonIcon(src="images/delete.png")
+      span.buttonSpan Clear all IP bindings
+  

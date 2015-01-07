@@ -1,0 +1,36 @@
+#suspectTable {
+	table-layout:fixed;
+	border-collapse:collapse;
+}
+
+#suspectTable td, #suspectTable th 
+{
+	font-size:1em;
+	border:1px solid #d0e9fc;
+	padding:1px 4px 1px 4px;
+	text-align:center;
+	white-space: nowrap;
+}
+
+#suspectTable th 
+{
+	border: 1px solid black;
+	white-space: normal;
+	font-size:1.1em;
+	text-align:center;
+	padding-top:4px;
+	padding-bottom:4px;
+	background-color: #d0e9fc;
+}
+
+div.sortArrow
+{
+	margin: 0 4px 0 5px;
+	color: red;
+	text-align: right;
+	font-size: 12px;
+	float: right;
+	display: block;
+	padding-left: 0;
+}
+

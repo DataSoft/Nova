@@ -1,0 +1,140 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+include mixins/headers.jade
+
+extends layout
+
+block headerAdditions
+  link(rel='stylesheet', type='text/css', href='configstyle.css', media='screen')
+  link(rel="stylesheet", type="text/css", href="novagrid.css", media="screen")
+
+  script(type="text/javascript", src="scripts/NovaGrid.js")
+
+  script.
+    var grid;
+    
+    function deleteSelectedItems()
+    {
+      var numberOfNames = #{usernames.length}
+      var items = grid.GetSelected();
+        
+      if(items.length >= numberOfNames)
+      {
+          alert('You can not delete all user accounts! It will be impossible to log in.');
+          return;
+      }
+      
+      try
+      {
+        now.deleteUserEntry(items, errorMessageCallback);
+      }
+      catch(err)
+      {
+        alert('Action failed! Unable to connect to server. Try refreshing the page.');
+        console.log('Caught error was: ' + err);
+      }
+    }
+
+    function updateUserPass()
+    {
+        var items = grid.GetSelected();
+
+        if(items.length != 1)
+        {
+          alert('Please select 1 user account to edit the password of');
+          return;
+        }
+        
+        var user = items[0]; 
+        var password = $('#newPassword').val();
+        var password2 = $("#newPassword2").val();
+
+        if (password != password2) {
+            alert("Passwords did not match!");
+            $("#newPassword").val("");
+            $("#newPassword2").val("");
+            return;
+        }
+
+        if (password == "") {
+            alert("Password can not be blank!");
+            return;
+        }
+
+        try
+        {
+          now.updateUserPassword(user, password, errorMessageCallback);
+        } 
+        catch(err)
+        {
+          alert('Action failed! Unable to connect to server. Try refreshing the page.');
+          console.log('Caught error was: ' + err);
+        }
+    }
+
+    
+    function errorMessageCallback(success, message)
+    {
+      if(success != true)
+      {
+        alert('Unable to complete operation due to error: ' + message)
+        return;
+      }
+      location.reload(true);
+    }
+
+    function init()
+    {
+        var usernames = !{JSON.stringify(usernames)};
+        var columns = [{name: "Usernames"}];
+        grid = new NovaGrid(columns, 0, document.getElementById("gridDiv"), "grid", true);
+        
+        for (var i = 0; i < usernames.length; i++) {
+            grid.PushEntry(new Array(usernames[i]));
+        }
+
+        grid.Render();
+
+    }
+  
+block content
+  +header("Existing User Accounts")
+    span#gridDiv(style="display: inline-block; width: 500px;")
+  
+    br
+    br
+    button(onClick='deleteSelectedItems()')
+      img.buttonIcon(src='images/delete.png')
+      span.buttonSpan Delete Selected Users
+    
+    br
+    br
+    table
+      tr
+        td New Password
+        td
+          input#newPassword(type='password')
+      tr
+        td Retype new password:
+        td
+          input#newPassword2(type='password')
+        
+    button(onClick='updateUserPass()') 
+      img.buttonIcon(src='images/edit.png')
+      span.buttonSpan Update Password of selected user
+   
+  

@@ -1,0 +1,49 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+include mixins/headers.jade
+
+extends layout
+
+block headerAdditions
+  link(rel='stylesheet', name='text/css', href='configstyle.css', media='screen')
+  script.
+   var route = '';
+
+    function setRoute(which)
+    {
+      route = which;
+      $('#route').attr('value', route);
+    }
+
+block content
+  +header("Basic Settings")
+    form#basicConfigForm(method='post', action='/configureNovaSave')
+      include includes/basicConfigForm
+      input(id='route', name='route', type='hidden', value='route')
+
+    button(onclick='window.location="/setup1"')
+      img.buttonIcon(src="images/back.png")
+      span.buttonSpan Back
+
+    button(id='autoconfigButton', type='button', onclick='now.WizardHasRun(); setRoute("autoconfig"); document.getElementById("basicConfigForm").submit();', value='Automatically Configure Haystack')
+      span.buttonSpan Configure haystack from network scan &nbsp
+      img.buttonIcon(src="images/forward.png")
+
+    button(id='manconfigButton', type='button', onclick='now.WizardHasRun(); setRoute("manconfig"); document.getElementById("basicConfigForm").submit();', value='Manually configure Haystack')
+      span.buttonSpan Configure haystack manually &nbsp
+      img.buttonIcon(src="images/forward.png")
+  

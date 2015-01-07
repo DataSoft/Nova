@@ -1,0 +1,2 @@
+# White listed source IPs can be added here, one per line
+All Interfaces,255.255.255.255

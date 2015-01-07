@@ -1,0 +1,186 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-   Nova is free software: you can redistribute it and/or modify
+//-    it under the terms of the GNU General Public License as published by
+//-    the Free Software Foundation, either version 3 of the License, or
+//-    (at your option) any later version.
+//- 
+//-    Nova is distributed in the hope that it will be useful,
+//-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-    GNU General Public License for more details.
+//- 
+//-    You should have received a copy of the GNU General Public License
+//-    along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+extends layout
+               
+block content
+  h1 Configuration Options
+  p(style='font-style: italic') Note: Configuration changes are reflected amongst all connected clients
+  
+  h2 Classification Settings
+  label Classification Timeout
+  br
+  input(type='number', step='1', min='0', name='CLASSIFICATION_TIMEOUT', value=CLASSIFICATION_TIMEOUT, id='CLASSIFICATION_TIMEOUT', onblur='checkInt("CLASSIFICATION_TIMEOUT")')
+  br
+  label Neighbors
+  br
+  input(type='number', step='1', min='1', name='K', value=K, id='K', onblur='checkInt("K")')
+  br
+  label EPS
+  br
+  input(name='EPS', type='number', value=EPS)
+  br
+  label Classification Threshold
+  br
+  input(name='CLASSIFICATION_THRESHOLD', type='number', value=CLASSIFICATION_THRESHOLD)
+  br
+  label Packets Needed Before Classification
+  br
+  input(type='number', name='MIN_PACKET_THRESHOLD', value=MIN_PACKET_THRESHOLD, id='MIN_PACKET_THRESHOLD', onblur='checkInt("MIN_PACKET_THRESHOLD")');
+  br
+  label Clear data after suspect logged as hostile?
+  br
+  if(CLEAR_AFTER_HOSTILE_EVENT != '0')
+    |Yes
+    input(type='radio', id='clearHostileYes', name='CLEAR_AFTER_HOSTILE_EVENT', value='1', checked)
+    br
+    |No
+    input(type='radio', name='CLEAR_AFTER_HOSTILE_EVENT', value='0')
+    br
+  else
+    |Yes
+    input(type='radio', id='clearHostileYes', name='CLEAR_AFTER_HOSTILE_EVENT', value='1')
+    br
+    |No
+    input(type='radio', name='CLEAR_AFTER_HOSTILE_EVENT', value='0', checked)
+    br
+  br
+  label Custom PCAP Filter String
+  br
+  input(type='text', name='CUSTOM_PCAP_FILTER', value=CUSTOM_PCAP_FILTER)
+  br
+  label Custom PCAP Filter String Mode
+  br
+  if(CUSTOM_PCAP_MODE != '0')
+    |Override
+    input(type='radio', id='customPcapYes', name='CUSTOM_PCAP_MODE', value='1', checked)
+    br
+    |Append
+    input(type='radio', name='CUSTOM_PCAP_MODE', value='0')
+    br
+  else
+    |Override
+    input(type='radio', id='customPcapYes', name='CUSTOM_PCAP_MODE', value='1')
+    br
+    |Append
+    input(type='radio', name='CUSTOM_PCAP_MODE', value='0', checked)
+    br
+  br
+  
+  h2 Special Run Settings
+  label Packet Capture Buffer Size (in bytes)
+  br
+  input(type='number', step='1', min='1024', name='CAPTURE_BUFFER_SIZE', value=CAPTURE_BUFFER_SIZE, id='CAPTURE_BUFFER_SIZE', onblur='checkInt("CAPTURE_BUFFER_SIZE")')
+  br
+  
+  h2 State File Settings
+  label State Save Frequency
+  br
+  input(type='number', min='0', name='SAVE_FREQUENCY', value=SAVE_FREQUENCY, id='SAVE_FREQUENCY', onblur='checkInt("SAVE_FREQUENCY")')
+  br
+  label Data TTL
+  br
+  input(type='number', min='0', name='DATA_TTL', value=DATA_TTL, id='DATA_TTL', onblur='checkInt("DATA_TTL")')
+  br
+  
+  h2 Doppelganger
+  label Doppelganger Enabled?
+  br
+  if(DM_ENABLED != '0')
+    |Yes
+    input(type='radio', id='dmEnabledYes', name='DM_ENABLED', value='1', checked)
+    br
+    |No
+    input(type='radio', name='DM_ENABLED', value='0')
+    br
+  else
+    |Yes
+    input(type='radio', id='dmEnabledYes', name='DM_ENABLED', value='1')
+    br
+    |No
+    input(type='radio', name='DM_ENABLED', value='0', checked)
+    br
+  br
+  
+  h2 Logger Settings
+  label Service Preferences
+  br
+  input(name='SERVICE_PREFERENCES', id='SERVICE_PREFERENCES', value=SERVICE_PREFERENCES)
+  br
+  br
+  //Aesthetic note: Probably want to have a spinner or something here
+  //to show that the clients are updating. Once Pulsar has received the 
+  //appropriate response from all of the clients that were targeted, notify
+  //the user and redirect to main page
+  button(id='updateButton', onclick='updateConfiguration();') Submit Configuration
+  br
+  br
+  button(id='manualConfigure', onclick='manualConfigure();') Manually Configure
+  select(id='selectClient') 
+  br
+  p(style='font-style: italic;') Clicking "Manually Configure" will open a new window
+  
+block headerAdditions
+  script(type='text/javascript', src='scripts/Config.js')
+  script
+    var clients = '#{CLIENTS}'.split(':');
+    var groups = !{GROUPS};
+    var message = {};
+    message.id = '#{CLIENTS}';
+    var replace = '#{SERVICE_PREFERENCES}';
+  
+    now.ready(function(){
+      now.GetClients(now.RenderConnectionsList);
+      now.SetUpNotificationsButton();
+      now.SetUpHostileEventsButton();
+      now.GetClients(function(list){
+        for(var i in list)
+        {
+          if(list[i] != '')
+          {
+            now.UpdateConnectionsList(list[i], 'updateStatus');
+            var option = document.createElement('option');
+            option.value = list[i];
+            option.id = list[i];
+            option.innerHTML = list[i];
+            document.getElementById('selectClient').appendChild(option);
+          } 
+        }
+      });
+      setInterval(function(){
+        if(typeof(now.GetClients) == 'function')
+        {
+          now.GetClients(function(list){
+            var element = document.getElementById('selectClient');
+            while(element.hasChildNodes())
+            {
+              element.removeChild(element.lastChild);            
+            }
+            for(var i in list)
+            {
+              if(list[i] != '')
+              {
+                var option = document.createElement('option');
+                option.value = list[i];
+                option.id = list[i];
+                option.innerHTML = list[i];
+                document.getElementById('selectClient').appendChild(option);
+              } 
+            }
+          });
+        }
+      }, 5000);
+    });

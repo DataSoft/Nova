@@ -1,0 +1,340 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+include mixins/headers.jade
+
+extends layout 
+
+block headerAdditions
+  link(rel='stylesheet', type='text/css', href='configstyle.css', media='screen')
+  script(type='text/javascript', src='scripts/portset.js')
+
+  script.
+    var currentInterface;
+    var pfile;
+
+    function SaveNode()
+    {
+        var node = {profile : $('#profile').val()
+            , portSet : $('#portSetList').val()
+            , intface : currentInterface
+            , oldName : '#{oldName}'
+            , ipType : $('#ipType').val()
+            , ip : $('#ip0').val() + '.' + $('#ip1').val() + '.' + $('#ip2').val() + '.' + $('#ip3').val()
+            , mac : $('#mac0').val() + ':' + $('#mac1').val() + ':' + $('#mac2').val() + ':' + $('#mac3').val() + ':' + $('#mac4').val() + ':' + $('#mac5').val()
+        };
+
+        now.SaveHoneydNode(node, saveNodeCallback);
+    }
+
+    function populateVendorList(profile)
+    {
+        pfile = profile;
+        $('#vendorList').html('');
+        for(var vendor in profile.ethernet)
+        {
+            var v = profile.ethernet[vendor].vendor;
+            var option = document.createElement('option');
+            option.innerHTML = v;
+            $('#vendorList').append(option);
+        }
+
+        $('#portSetList').html('');
+        for(var portset in profile.portSets)
+        {
+            var v = profile.portSets[portset].setName;
+            var option = document.createElement('option');
+            option.innerHTML = v;
+            if(v == '#{portSet}')
+            {
+                option.selected = true;
+            }
+
+            $('#portSetList').append(option);
+        }
+        
+        portsetSelectionChanged();
+    }
+    
+    function generateDefaultRows(tcp, udp, icmp)
+    {
+      var portHook = $('#portsetHook');
+      
+      var tr0 = document.createElement('tr');
+      var td0 = document.createElement('td');
+      td0.innerHTML = 'default';
+      var td1 = document.createElement('td');
+      td1.innerHTML = 'tcp';
+      var td2 = document.createElement('td');
+      td2.innerHTML = tcp;
+      tr0.appendChild(td0);
+      tr0.appendChild(td1);
+      tr0.appendChild(td2);
+      portHook.append(tr0);
+      
+      var tr1 = document.createElement('tr');
+      var td3 = document.createElement('td');
+      td3.innerHTML = 'default';
+      var td4 = document.createElement('td');
+      td4.innerHTML = 'udp';
+      var td5 = document.createElement('td');
+      td5.innerHTML = udp;
+      tr1.appendChild(td3);
+      tr1.appendChild(td4);
+      tr1.appendChild(td5);
+      portHook.append(tr1);
+      
+      var tr2 = document.createElement('tr');
+      var td6 = document.createElement('td');
+      td6.innerHTML = 'default';
+      var td7 = document.createElement('td');
+      td7.innerHTML = 'icmp';
+      var td8 = document.createElement('td');
+      td8.innerHTML = icmp;
+      tr2.appendChild(td6);
+      tr2.appendChild(td7);
+      tr2.appendChild(td8);
+      portHook.append(tr2);
+    }
+    
+    function generateExceptionRow(num, proto, behav)
+    {
+      var tr0 = document.createElement('tr');
+      var td0 = document.createElement('td');
+      td0.innerHTML = num;
+      var td1 = document.createElement('td');
+      td1.innerHTML = proto;
+      var td2 = document.createElement('td');
+      td2.innerHTML = behav;
+      tr0.appendChild(td0);
+      tr0.appendChild(td1);
+      tr0.appendChild(td2);
+      $('#portsetHook').append(tr0);
+    }
+    
+    function portsetSelectionChanged()
+    {
+      $('#portsetHook').empty();
+      var desired = $('#portSetList').val();
+      var lightboxProfile = $('#profile').val();
+      now.GetPortSets(lightboxProfile, function(portset){
+        for(var i in portset)
+        {
+          if(desired == portset[i].setName)
+          {
+            generateDefaultRows(portset[i].TCPBehavior, portset[i].UDPBehavior, portset[i].ICMPBehavior);
+            for(var port in portset[i].PortExceptions)
+            {
+              generateExceptionRow(portset[i].PortExceptions[port].portNum, portset[i].PortExceptions[port].protocol, portset[i].PortExceptions[port].behavior);
+            }
+          }
+        }
+      });
+    }
+
+    function profileChanged()
+    {
+        now.GetProfile($('#profile').val(), populateVendorList);
+    }
+
+    function saveNodeCallback(err)
+    {
+      if(err != null)
+      {
+        alert('Unable to complete operation due to error: ' + err);
+        window.location = '/honeydConfigManage?tab=settingsNodes';
+        return;
+      }
+     now.IsHaystackUp(checkIfRestartNeeded); 
+    }
+
+    function checkIfRestartNeeded(haystackUp)
+    {
+      if (haystackUp)
+      {
+        var restartHaystack = confirm('You must restart the haystack for this to take effect. Restart it now?');
+        if (restartHaystack)
+        {
+          now.RestartHaystack(function() {
+            window.location = '/honeydConfigManage?tab=settingsNodes';
+          });
+        } else {
+          window.location = '/honeydConfigManage?tab=settingsNodes';
+        }
+      } else {
+        window.location = '/honeydConfigManage?tab=settingsNodes';
+      }
+    }
+
+    function ipTypeChanged()
+    {
+      var ipEditEnabled;
+      var macEditEnabled;
+
+      if($('#ipType').val() == 'DHCP')
+      {
+        ipEditEnabled = true;
+      }
+      else
+      {
+        ipEditEnabled = false;
+      }
+
+      for (var i = 0; i < 4; i++)
+      {
+        $('#ip' + i).attr('disabled', ipEditEnabled);
+      }
+     }
+    
+    function checkOnlyOne(checkedBox)
+    {
+      currentInterface = checkedBox.value;
+    }
+
+    function GenerateMac()
+    {
+        now.GenerateMACForVendor($('#vendorList').val(), MACAddressCb);
+    }
+
+    function MACAddressCb(mac)
+    {
+        if (mac == null)
+        {
+            alert('Unable to get MAC Address');
+            return;
+        }
+
+        var splitMac = mac.split(':');
+        for (var i = 0; i < 6; i++)
+        {
+            $('#mac' + i).val(splitMac[i]);
+        }
+    }
+   
+    function init()
+    {
+        now.ready( function()
+        {
+            profileChanged();
+            checkOnlyOne($('#if0')[0]);
+        });
+    }
+    
+block content
+  +header("Editing Honeyd Node")
+    input(type='hidden', name='oldName', value='#{oldName}')
+
+    label Profile
+    select#profile(name='profile', onchange='profileChanged()')
+      each p, i in profiles
+        if p == profile
+          option(SELECTED) #{p}
+        else
+          option #{p}
+    br
+    br
+    
+    label Portset
+    select#portSetList(name='profile', onchange='portsetSelectionChanged()')
+    br
+    br
+    div(style='height: 200px; overflow-y: scroll; border: 1px solid black; display: inline-block;')
+      table(border='1')
+        thead
+          th(style='background-color: #d0e9fc;') Port Number
+          th(style='background-color: #d0e9fc;') Protocol
+          th(style='background-color: #d0e9fc;') Behavior
+        tbody#portsetHook
+    br
+    br
+
+    label Network Interface
+    table
+      thead
+        tr 
+      tbody
+      - if(INTERFACES.length == 1)
+        tr 
+          td
+            div
+              input(type='radio', value=INTERFACES[0], id='if0', name='interface', width=10, checked, onchange='checkOnlyOne(if0)')
+              span #{interfaceAliases[0]}
+      - else
+        - for (var i = 0; i < INTERFACES.length; i++)
+            tr 
+              td
+                - if (String(interface) == String(INTERFACES[i]))
+                  input(type='radio', value=INTERFACES[i], id='if#{i}', name='interface', checked, width=10, onchange='checkOnlyOne(if#{i})')
+                  span #{interfaceAliases[i]}
+                - else
+                  input(type='radio', value=INTERFACES[i], id='if#{i}', name='interface', width=10, onchange='checkOnlyOne(if#{i})')
+                  span #{interfaceAliases[i]}
+
+    hidden(id='length', value=INTERFACES.length)
+ 
+    br
+    br
+    label IP Address Allocation Type
+    select#ipType(name='ipType', onChange='ipTypeChanged()')
+      if ip == 'DHCP'
+        option(SELECTED) DHCP
+      else
+        option DHCP
+
+      if ip == 'DHCP'
+        option Static Address
+      else
+        option(SELECTED) Static Address
+
+    br
+    label IP address
+    - for (var i = 0; i < 4; i++)
+      - if (ip == 'DHCP')
+        input.ip(id = 'ip' + i,type='number', name='#{"ip" + i}', min='0', max='255', required='true', value='1', disabled='disabled')
+      - else
+        input.ip(id = 'ip' + i,type='number', name='#{"ip" + i}', min='0', max='255', required='true', value='#{ip.split(".")[i]}')
+    
+
+
+    br
+    br
+    label &nbsp
+    button(onclick='GenerateMac()') 
+      img(class='buttonIcon', src='images/dice.png')
+      span(class='buttonSpan') Generate new MAC
+    br
+    br
+    label Ethernet Vendor
+    select#vendorList(name'vendorList')
+
+    br
+    label MAC Address
+    - for (var i = 0; i < 6; i++)
+      - if (mac == 'RANDOM')
+        input(id = 'mac' + i, type='text', name='#{"mac" + i}', pattern='[0-9a-f]{2}', required='true', value='00', disabled='disabled', style='width: 25px')
+      - else
+        input(id = 'mac' + i, type='text', name='#{"mac" + i}', pattern='[0-9a-f]{2}', required='true', value='#{mac.split(":")[i]}', style='width: 25px')
+
+
+    br
+    br
+    button(onclick='SaveNode();')
+      img.buttonIcon(src='images/ok.png')
+      span.buttonSpan Save Changes
+    
+    button(onclick='window.location="/honeydConfigManage?tab=settingsNodes"')
+      img.buttonIcon(src='images/cancel.png')
+      span.buttonSpan Cancel

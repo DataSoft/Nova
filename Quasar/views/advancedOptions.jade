@@ -1,0 +1,55 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+include mixins/headers.jade
+
+extends layout
+
+block headerAdditions
+  link(rel='stylesheet', name='text/css', href='configstyle.css', media='screen')
+  script.
+    function restoreDefaults()
+    {
+        try {
+            now.restoreDefaultSettings(configurationRestored);
+        } catch (err)
+        {
+            alert('Unable to contact server');
+            console.log('Error was: ' + err);
+        }
+    }
+
+    function configurationRestored()
+    {
+        window.location.reload();
+    }
+
+
+block content
+  +header("Advanced Configuration Options")
+    form#advancedConfigForm(method='post', action='/configureNovaSave')
+      input(type="hidden", value="/advancedOptions", name="ERROR_REDIRECT")
+      include includes/advancedConfigForm
+    button(onClick='document.getElementById("advancedConfigForm").submit()')
+      img.buttonIcon(src='images/ok.png')
+      span.buttonSpan Save Changes
+    br
+    button(onClick='restoreDefaults()') 
+      img.buttonIcon(src='/images/erase.png')
+      span.buttonSpan Restore Default Configuration (will erase all changes!)
+//    include includes/advancedConfigForm
+
+  

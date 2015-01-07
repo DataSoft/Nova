@@ -1,0 +1,98 @@
+div.novaGrid {
+	border: 1px solid black;
+  border-bottom: 0px;
+	min-height:  200px;
+}
+
+.novaGridPagesDiv {
+	text-align: left;
+	background-color: #ABD6FF;
+	background-image: url('images/gradient.jpg');
+	background-repeat: repeat-x;
+	border: 1px solid black;
+  border-top: 1px solid #ABD6FF;
+  font-weight: bold;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  vertical-align: center;
+}
+
+.novaGrid {
+	border-collapse:collapse;
+}
+
+table.novaGrid {
+	border: 1px solid black;
+	width: 100%;
+}
+
+td.novaGrid
+{
+	font-size:1em;
+	border:1px solid #d0e9fc;
+	padding:1px 4px 1px 4px;
+	text-align:center;
+	white-space: nowrap;
+}
+
+.novaGrid th
+{
+	border: 1px solid black;
+	white-space: nowrap;
+	font-size:1.1em;
+	text-align:center;
+	padding-top:4px;
+	padding-bottom:4px;
+	background-repeat: repeat-x;
+	background-color: #ABD6FF;
+	background-image: url('images/gradient.jpg');
+	border: 1px solid #759DC0;
+}
+
+.novaGrid a
+{
+	color: black;
+	text-decoration: none;
+}
+
+tr.novaGrid:hover {
+	background-color: #AFD9FF !important;
+}
+
+.pageNumberLink {
+	font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+	margin-right: 2px;
+	margin-left: 2px;
+	padding-right: 2px;
+	padding-left: 2px;
+	text-decoration: none;
+	color: black;
+}
+
+.selectedpageNumberLink {
+    background-color: #AFD9FF;
+}
+
+.pageNumberLink:hover , .selectedpageNumberLink:hover{
+	background-color: #AFD9FF !important;
+}
+
+span.sortArrow
+{
+	margin: 0 4px 0 5px;
+	float: right;	
+	font-size: 12px;
+	color: red;
+	display: block;
+	padding-left: 0;
+}
+
+.novaGridTitle {
+	align-text: center;
+}
+
+.piLegendElementDiv {
+	text-align: left;
+}

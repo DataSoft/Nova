@@ -1,0 +1,376 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+include mixins/headers.jade
+
+extends layout
+
+block headerAdditions
+  script.
+    var scriptList = !{JSON.stringify(scripts)};
+    var scriptBindings = !{JSON.stringify(bindings)};
+
+    var theDoc = document;
+
+    function closeLightbox()
+    {
+      enableBackground();
+      
+      $('#lightbox').css('display', 'none');
+      $('#setup').css('opacity', '1.0'); 
+      
+      while($('#appendHook')[0].hasChildNodes())
+      {
+        $('#appendHook').children('appendHook:last-child').remove(); 
+      }
+      
+      rmLb = false;
+    }
+
+    var rmLb = false;
+    
+    function handleOnclick(e)
+    {
+      var evt = (e ? e : window.event);
+      var source = evt.target || evt.srcElement;
+      var loc = theDoc.location.href;
+      if(loc.indexOf('/suspects') != -1)
+      {
+        removeContextMenu(); 
+      }
+      if(rmLb && checkIfLightboxChild(source) == 'false' && (loc.indexOf('/autoConfig') == -1))
+      {
+        closeLightbox();
+      }
+      else if($('#lightbox').css('display') == 'block')
+      {
+        rmLb = true;
+      }
+    }
+    
+    function checkIfLightboxChild(source)
+    {
+      if(source.id != 'lightbox' && source.tagName != 'HTML')
+      {
+        return checkIfLightboxChild(source.parentNode);
+      }        
+      else if(source.id == 'lightbox')
+      {
+        return 'true';
+      }
+      else if(source.tagName == 'HTML')
+      {
+        return 'false';
+      }
+    }
+
+    function setUpScriptTable()
+    {
+      var append = $('#addAnchor')[0];
+      for(var i in scriptList)
+      {
+        var disable = false;
+        var tr = theDoc.createElement('tr');
+        tr.id = scriptList[i].script;
+        var td0 = theDoc.createElement('td');
+        var label0 = theDoc.createElement('label');
+        label0.innerHTML = scriptList[i].script;
+        var td1 = theDoc.createElement('td');
+        var label1 = theDoc.createElement('label');
+        label1.innerHTML = (scriptBindings[scriptList[i].script] != undefined ? scriptBindings[scriptList[i].script] : '');
+        
+        if(label1.innerHTML !== scriptBindings[scriptList[i].script])
+        {
+          disable = true;
+        }
+        
+        var td2 = theDoc.createElement('td');
+        var label2 = theDoc.createElement('label');
+        label2.innerHTML = scriptList[i].path;
+
+        var td4 = theDoc.createElement('td');
+        
+        if(scriptList[i].configurable)
+        {
+          var editButton = theDoc.createElement('button');
+          editButton.innerHTML = '<span style="width: 50px; display: block" class="buttonSpan"><img class="buttonIcon" src="images/edit.png"/>Edit</span>';
+          editButton.setAttribute('onclick', 'editOptions("' + scriptList[i].script + '")');
+
+          td4.appendChild(editButton);
+        }
+        
+        
+        td0.appendChild(label0);
+        td1.appendChild(label1);
+        td2.appendChild(label2);
+        tr.appendChild(td0);
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+        tr.appendChild(td4);
+        append.appendChild(tr);
+      }
+    }
+    
+    function addScriptOptionValue()
+    {
+        var key = $('#optionKeys').val();
+        var value = $('#newOptionName').val();
+        $('#newOptionName').val('');
+        now.addScriptOptionValue(currentlyEditedScript.GetName, key, value, function() {editOptions(currentlyEditedScript.GetName)});
+    }
+
+    function deleteScriptOptionValue(script, key, value)
+    {
+        console.log("Deleting " + script + " " + key + " " + value);
+        now.deleteScriptOptionValue(currentlyEditedScript.GetName, key, value, function() {editOptions(script)});
+    }
+
+    function selectedKeyChanged()
+    {
+        $('#newOptionName').val('');
+        $('#optionValues').empty(); 
+        var currentKey = $('#optionKeys').val();
+        var name = currentlyEditedScript.GetName;
+        var forLength = currentlyEditedScript.GetOptions[currentKey];
+        if(forLength == undefined)
+        {
+          forLength = 0;
+        }
+        else
+        {
+          forLength = forLength.length;
+        }
+        for(var i = 0; i < forLength; i++)
+        {
+           var tr = theDoc.createElement('tr');
+          
+           var td1 = theDoc.createElement('td');
+           tr.appendChild(td1);
+           
+           var td2 = theDoc.createElement('td');
+           tr.appendChild(td2);
+           
+           var value = currentlyEditedScript.GetOptions[currentKey][i];
+           td1.innerHTML = value;
+         
+           var deleteButton = theDoc.createElement('button');
+           deleteButton.innerHTML = 'Delete';
+           deleteButton.onclick = function(){    
+                var key = currentKey;
+                var innerValue = value;
+                return function(){
+                    deleteScriptOptionValue(name, key, innerValue);
+                }
+           }();
+           td2.appendChild(deleteButton);
+           
+           $('#optionValues').append(tr); 
+        }
+    }
+
+    function editOptions(scriptName)
+    {
+       $('#optionKeys').empty(); 
+       $('#optionValues').empty(); 
+       now.GetScript(scriptName, function(script){
+            currentlyEditedScript = script;
+            var count = 0;
+            for(var key in script.GetOptions)
+            {
+              var option = theDoc.createElement('option');
+              option.innerHTML = key;
+              $('#optionKeys').append(option);
+              count++;
+            }
+
+            if(count == 0)
+            {
+              alert('No editable options for this script');         
+            }
+            else
+            {
+              showLightBox('2'); 
+            }
+
+            selectedKeyChanged();
+       });
+    }
+    
+    function ClearScriptWrapper(scriptName)
+    { 
+      var profilesForScript = scriptBindings[scriptName].split(',');
+      
+      if(profilesForScript.length > 1)
+      {
+        showLightBox('1');
+        for(var i in profilesForScript)
+        {
+          var tr = theDoc.createElement('tr');
+          var td0 = theDoc.createElement('td');
+          var checkbox = theDoc.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.value = profilesForScript[i];
+          checkbox.id = profilesForScript[i];
+          checkbox.checked = true;
+          var td1 = theDoc.createElement('td');
+          var label = theDoc.createElement('label');
+          label.innerHTML = profilesForScript[i];
+          
+          td0.appendChild(checkbox);
+          td1.appendChild(label);
+          tr.appendChild(td0);
+          tr.appendChild(td1);
+          $('#appendHook').append(tr);
+        }
+        $('#changeOnclick')[0].setAttribute('onclick', 'ClearScriptFromProfiles("' + scriptName + '", getProfileExceptions("' + profilesForScript.join() + '"), true)');
+      }
+      else
+      {
+        ClearScriptFromProfiles(scriptName, '', true);
+      }
+    }
+    
+    function getProfileExceptions(ids)
+    {
+      var exceptions = ids.split(',');
+      var ret = [];
+      
+      for(var i in exceptions)
+      {
+        if(exceptions[i] != undefined && exceptions[i] != '')
+        {
+          if(theDoc.getElementById(exceptions[i]).checked == false)
+          {
+            ret.push(exceptions[i]);
+          }
+        }
+      }
+      
+      return ret;
+    }
+    
+    function ClearScriptFromProfiles(scriptName, exceptions, reload)
+    {
+      if(scriptBindings[scriptName] == undefined)
+      {
+        console.log('The script ' + scriptName + ' is not linked to any profiles');
+        return;
+      }
+      var profilesIter = scriptBindings[scriptName].split(',');
+      if(profilesIter == '' || profilesIter == undefined || profilesIter == null)
+      {
+        console.log('found only one profile');
+        profilesIter = scriptBindings[scriptName];
+      }
+      
+      if(exceptions != '' && exceptions != undefined)
+      {
+        for(var i in profilesIter)
+        {
+          for(var j in exceptions)
+          {
+            if(profilesIter[i].substring(0, profilesIter[i].indexOf(':')) == exceptions[j])
+            {
+              profilesIter[i] = null;
+            }
+          }
+        }
+      }
+      
+      if(typeof now.RemoveScriptFromProfiles == 'function' && (reload == 'true' || reload == true))
+      {
+        now.RemoveScriptFromProfiles(scriptName, function(){
+          location.reload(true);
+        });
+      }
+      else if(typeof now.RemoveScriptFromProfiles == 'function' && (reload == 'false' || reload == false))
+      {
+        now.RemoveScriptFromProfiles(scriptName, profilesIter); 
+      }
+      else
+      {
+        alert('Could not complete action, function RemoveScriptFromProfiles not found');
+        return;
+      }
+    }
+
+    function showLightBox(divIndex)
+    {
+      disableBackground();
+      
+      $('#setup').css('opacity', '0.5');
+      $('#lightbox').css('display', 'block');
+      
+      if(divIndex == '1')
+      {
+        $('#addScriptForm').css('display', 'none');
+        $('#selectClearProfiles').css('display', 'block');
+        $('#editScriptForm').css('display', 'none');
+      }
+      else if(divIndex == '2')
+      {
+        $('#addScriptForm').css('display', 'none');
+        $('#selectClearProfiles').css('display', 'none');
+        $('#editScriptForm').css('display', 'block');
+      }
+    }
+    
+    function disableBackground()
+    {
+      $('#addAnchor').find('button').attr('disabled', true);
+    }
+
+    function enableBackground()
+    {
+      $('#addAnchor').find('button').attr('disabled', false);
+    }
+   
+    function init()
+    {
+        now.ready(function(){
+          setUpScriptTable();
+        });
+    }
+
+block content
+  +headerWithHelp("Honeyd Scripts", "scripts")
+    div#setup(onclick='handleOnclick(event)')
+      table(border='1', style='border: solid black 2px;')
+        thead
+          tr
+            th(style='background-color: #d0e9fc;') Name
+            th(style='background-color: #d0e9fc;') Profiles
+            th(style='background-color: #d0e9fc;') Path And Parameters
+            th(style='background-color: #d0e9fc;') Edit
+        tbody#addAnchor
+      br
+  
+  div(id='lightbox', class='white_content')
+    div(id='editScriptForm', style='display: none')
+      label Key
+      select#optionKeys(onchange='selectedKeyChanged()');
+      table#optionValues(style='border: 1px solid black')
+      input#newOptionName(type='text')
+      button(onclick='addScriptOptionValue()') Add
+    div(id='selectClearProfiles', style='display: none')
+      table
+        thead
+          tr
+            th Profiles To Remove Script From
+        tbody(id='appendHook')
+      button(id='changeOnclick') Clear Scripts From Profile
+    br
+    button(onclick='closeLightbox()') Close

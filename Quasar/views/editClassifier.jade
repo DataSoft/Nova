@@ -1,0 +1,109 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+include mixins/headers.jade
+
+extends layout
+
+block headerAdditions
+  script.
+    var classifier = {};
+
+    function init() {
+      classifier = !{JSON.stringify(classifier)};
+      classifier.type = ko.observable(classifier.type);
+      
+
+      for (var i = 0; i < classifier.features.length; i++) {
+        // Make the enabled state observable so we can update things when enabled checkboxes change
+        classifier.features[i].enabled = ko.observable(classifier.features[i].enabled);
+      }
+      
+
+      console.log(classifier);
+
+      ko.applyBindings(classifier);
+    }
+
+
+    function submit() {
+        now.saveClassifier(ko.toJS(classifier), classifier.index , finished);
+    }
+
+    function cancel() {
+        finished();
+    }
+
+    function finished() {
+        window.location = '/editClassifiers';
+    }
+
+block content
+  +header("Classifier Editing")
+    table
+      tr
+        td
+          span Classifier Type
+        td
+          select(data-bind='value: type')
+            option KNN
+            option THRESHOLD_TRIGGER
+            option SCRIPT_ALERT
+            option UNAUTHORIZED_SUSPECTS
+            option UNAUTHORIZED_MACS
+      tr
+        td
+          span Mode
+        td
+          select(data-bind='value: mode')
+            option WEIGHTED
+            option HOSTILE_OVERRIDE
+            option BENIGN_OVERRIDE
+      tr
+        td
+          span Weight
+        td
+          input(type='number', data-bind='value: weight')
+
+    br
+
+    table(data-bind='visible: classifier.type() != "SCRIPT_ALERT" && classifier.type() != "UNAUTHORIZED_SUSPECTS" && classifier.type() != "UNAUTHORIZED_MACS"')
+      theader
+        td Feature Name
+        td Enabled
+        td(data-bind='visible: classifier.type() == "KNN"') Weight
+        td(data-bind='visible: classifier.type() == "THRESHOLD_TRIGGER"') Hostile Threshold
+        td(data-bind='visible: classifier.type() == "SCRIPT_ALERT"') Script Triggered Alerts
+        td(data-bind='visible: classifier.type() == "UNAUTHORIZED_SUSPECTS"') Unauthorized IP Detector
+        td(data-bind='visible: classifier.type() == "UNAUTHORIZED_MACS"') Unauthorized MAC Detector
+      tbody(data-bind='foreach: classifier.features')
+        tr
+          td(data-bind='text: name')
+          td
+            input(type='checkbox', data-bind='checked: enabled')
+          td(data-bind='visible: classifier.type() == "KNN"')
+            input(type='text', data-bind='value: weight, visible: classifier.type() == "KNN", enable: (classifier.type() == "KNN" && classifier.features[$index()].enabled())')
+          td(data-bind='visible: classifier.type() == "THRESHOLD_TRIGGER"')
+            input(type='text', data-bind='value: threshold, visible: classifier.type() == "THRESHOLD_TRIGGER", enable: (classifier.type() == "THRESHOLD_TRIGGER" && classifier.features[$index()].enabled())')
+
+    br
+    button.button(onclick='submit()')
+      img.buttonIcon(src='/images/ok.png')
+      span.buttonSpan Save Changes
+    
+    button.button(onclick='cancel()')
+      img.buttonIcon(src='/images/cancel.png')
+      span.buttonSpan Cancel

@@ -1,0 +1,75 @@
+#!bash
+# Bash completion support for the Nova command line interface
+
+_novacli() 
+{
+    local cur prev opts components listtypes
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    
+    opts="status start stop list get uptime readsetting writesetting listsettings monitor resetpassword"
+    components="nova haystack quasar capture"
+    listtypes="all hostile benign"
+	settings=$(novacli listsettings)
+
+    case "${prev}" in
+	status|start|stop)	
+	    COMPREPLY=( $(compgen -W "${components}" -- ${cur}) )
+	return 0
+	;;
+
+	nova|haystack)
+	    COMPREPLY=( $(compgen -W "debug" -- ${cur}) )
+	return 0
+	;;
+    
+	list)	
+	    COMPREPLY=( $(compgen -W "${listtypes}" -- ${cur}) )
+	return 0
+	;;
+    
+	get)	
+	    COMPREPLY=( $(compgen -W "${listtypes}" -- ${cur}) )
+	return 0
+	;;
+	
+	writesetting)	
+	    COMPREPLY=( $(compgen -W "${settings}" -- ${cur}) )
+	return 0
+	;;
+	
+	readsetting)	
+	    COMPREPLY=( $(compgen -W "${settings}" -- ${cur}) )
+	return 0
+	;;
+	
+	clear)	
+	    COMPREPLY=( $(compgen -W "all" -- ${cur}) )
+	return 0
+	;;
+	
+	uptime)	
+	    COMPREPLY=()
+	return 0
+	;;
+	
+	resetpassword)	
+	    COMPREPLY=()
+	return 0
+	;;
+	
+	listsettings)	
+	    COMPREPLY=()
+	return 0
+	;;
+    
+    
+    esac
+
+    # Display the options for first arg
+    COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    return 0
+}
+
+complete -F _novacli novacli

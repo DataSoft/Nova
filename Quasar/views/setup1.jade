@@ -1,0 +1,47 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+include mixins/headers.jade
+
+extends layout
+
+block content
+  +header("Create New User Account")(style='text-align:center; display: block;')
+    p Note that this new account will replace the default username and password.
+    form#createUser(method='post', action='/createInitialUser', autocomplete='off')
+      table(align='center', border='0', style='background-color: #D0E9FC; padding:15px; border-collapse:collapse; border: 2px solid black;')
+        tr
+          td
+            label Username
+          td
+            input(type='text', name='username', size='20')
+        tr
+          td
+            label Password
+          td
+            input(type='password', name='password', size='20') 
+        tr
+          td
+          td
+      button(type='button', onClick='location.href="/welcome"')
+        img.buttonIcon(src="images/back.png")
+        span.buttonSpan Back
+      
+      button(type='nextButton', onClick='$("#createUser").submit();')
+        span.buttonSpan Continue to basic options &nbsp
+        img.buttonIcon(src="images/forward.png")
+
+

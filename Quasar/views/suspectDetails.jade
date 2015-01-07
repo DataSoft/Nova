@@ -1,0 +1,785 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+include mixins/headers.jade
+
+extends layout
+
+block content
+  div(style="display: inline-block;")
+    div(style="display: inline-block;")
+      div(style="text-align: center; margin: 0")
+        +header("Suspect Identification Information")(style="width: 500px; margin: 0; text-align: center;")
+          table#generalInfo(style="display: inline-block; text-align: left;")
+          p Reverse DNS: 
+            span#domain
+      br
+      +headerWithHelp("Packet Count Summaries", "packetCounts")(style="margin: 20px")
+        table.novaGrid#packetCountTotals
+      
+      +header("Protocol Breakdown")(style="margin: 20px")
+        div#ProtocolPiChart
+      
+      +headerWithHelp("Computed KNN Classification Features", "knnFeatures")(style="margin: 20px")
+        table.novaGrid#knnFeatures
+     
+    br
+    +headerWithHelp("Percent of TCP packets with flags set", "tcpFlags")(style="margin: 20px")
+      table#tcpFlagCharts
+    
+    +headerWithHelp("Classification Engine Notes", "classificationNotes")(style="margin: 20px") 
+      div#classificationOutput
+  
+  +headerWithHelp("TCP Packet Breakdown", "packetIPPortBreakdowns")(style="margin: 10px; width: 1024px") 
+    div#tcpPortChart(style='display: inline-block; width: 30%; margin: 10px')
+    div#tcpIpChart(style='display: inline-block; width: 30%; margin: 10px')
+    div#tcpIpPortChart(style='display: inline-block; width: 30%; margin: 10px')
+
+  br
+  +headerWithHelp("UDP Packet Breakdown", "packetIPPortBreakdowns")(style="margin: 10px; width: 1024px") 
+    div#udpPortChart(style='display: inline-block; width: 30%; margin: 10px')
+    div#udpIpChart(style='display: inline-block; width: 30%; margin: 10px')
+    div#udpIpPortChart(style='display: inline-block; width: 30%; margin: 10px')
+  
+  br
+  +headerWithHelp("ICMP Packet Breakdown", "packetIPPortBreakdowns")(style="margin: 10px; width: 1024px") 
+    div#icmpPortChart(style='display: inline-block; width: 30%; margin: 10px')
+    div#icmpIpChart(style='display: inline-block; width: 30%; margin: 10px')
+    div#icmpIpPortChart(style='display: inline-block; width: 30%; margin: 10px')
+  
+  
+  br
+  div(style="width: 1024px")
+    +header("Connections from suspect")(style="margin: 20px; margin-right: 100px") 
+      span#packetCountTable(style="display: inline-block;")
+    +header("Packets by size")(style="margin: 20px;") 
+      span#packetSizeTable(style="display: inline-block;")
+  
+  br
+  +headerWithHelp("Live Graphs of Feature Changes", "liveFeatureGraphs")(style="margin: 10px;") 
+    input#enableGridLines(type='checkbox', onclick='toggleGridLines()')
+    span Enable Graph Point Lines
+    br
+    input#enableAutoScale(type='checkbox', onclick='toggleAutoscale()')
+    span Enable Auto Scaling
+    br
+    
+    div(style='display: inline-block; margin: 8px; float: left')
+      h3 Classification
+      canvas(id = 'classificationChart', width='200px', height='200px', style='border: 1px solid black')
+      p(id = 'classificationChartP')     
+    - for (var i = 0; i < 14; i++) {
+      div(style='display: inline-block; margin: 8px')
+        h3 #{String(featureNames).split(',')[i]}
+        canvas(id = 'chart#{i}', width='200px', height='200px', style='border: 1px solid black')
+        p(id = 'p#{i}')     
+    -}
+
+
+
+block headerAdditions
+  link(rel="stylesheet", type="text/css", href="novagrid.css", media="screen")
+  script(type="text/javascript", src="scripts/NovaGrid.js")
+  script(type='text/javascript', src='scripts/NovaPiChart.js')
+
+
+  style.
+    .innerVertBar {
+        height: 60%;
+        position: absolute;
+        bottom: 0px;
+        left: 0px;
+        width: 20px;
+        margin: 0px;
+        
+        background-image: url('images/gradient.jpg');
+        background-repeat: repeat-x;
+        background-color: #ABD6FF;
+        border: 0;
+    }
+
+    .outerVertBar {
+        height: 100px;
+        width: 20px;
+        border: 1px solid black;
+        position: relative;
+        background-color: #F5F5F9;
+    }
+
+    .containerVertBar {
+        display: inline-block;
+        margin-right: 10px;
+    }
+
+  script.
+    var grid;
+    var protocolChart, tcpPortChart, udpPortChart, tcpIpChart, udpIpChart, tcpIpPortChart, udpIpPortChart, icmpIpChart, icmpIpPortChart, icmpPortChart;
+
+    // For converting numeric icmp code to something nicer to display to the user
+    var icmpTypes = {
+          0:"Echo Reply", 
+          1:"Unassigned", 
+          2:"Unassigned", 
+          3:"Destination Unreachable", 
+          4:"Source Quench", 
+          5:"Redirect", 
+          6:"Alternate Host Address", 
+          7:"Unassigned", 
+          8:"Echo", 
+          9:"Router Advertisement", 
+          10:"Router Selection", 
+          11:"Time Exceeded", 
+          12:"Parameter Problem", 
+          13:"Timestamp", 
+          14:"Timestamp Reply", 
+          15:"Information Request", 
+          16:"Information Reply", 
+          17:"Address Mask Request", 
+          18:"Address Mask Reply", 
+          19:"Reserved (for Security)", 
+          20:"Reserved (for Robustness Experiment)", 
+          30:"Traceroute", 
+          31:"Datagram Conversion Error", 
+          32:"Mobile Host Redirect",
+          33:"IPv6 Where-Are-You",
+          34:"IPv6 I-Am-Here",
+          35:"Mobile Registration Request",
+          36:"Mobile Registration Reply",
+          37:"Domain Name Request"
+    };
+
+    function numberWithCommas(x) {
+        var x = String(x);
+        var out = String();
+        
+        for (var i = (x.length - 1); i >= 0; i--) {
+            out += x[(x.length - 1) - i];
+            if (i % 3 == 0 && i != 0) {
+                out += ",";
+            }
+        }
+
+        return out;
+    }
+
+    function init(ready){
+        tcpIpChart = new NovaPiChart('tcpIpChart', 'TCP Connections by IP', 200);
+        tcpPortChart = new NovaPiChart('tcpPortChart', 'TCP Connections by port', 200);
+        tcpIpPortChart = new NovaPiChart('tcpIpPortChart', 'TCP Packets by IP and port', 200);
+        
+        udpIpChart = new NovaPiChart('udpIpChart', 'UDP Packets by IP', 200);
+        udpPortChart = new NovaPiChart('udpPortChart', 'UDP Packets by port', 200);
+        udpIpPortChart = new NovaPiChart('udpIpPortChart', 'UDP Packets by IP and port', 200);
+        
+        icmpIpChart = new NovaPiChart('icmpIpChart', 'ICMP Packets by IP', 200);
+        icmpPortChart = new NovaPiChart('icmpPortChart', 'ICMP Packets by type', 200);
+        icmpIpPortChart = new NovaPiChart('icmpIpPortChart', 'ICMP Packets by IP and type', 200);
+        
+        protocolChart = new NovaPiChart('ProtocolPiChart', 'Packets By Protocol', 200);
+
+        tcpIpChart.m_disableLegend = true;
+        tcpPortChart.m_disableLegend = true;
+        tcpIpPortChart.m_disableLegend = true;
+        udpIpChart.m_disableLegend = true;
+        udpPortChart.m_disableLegend = true;
+        udpIpPortChart.m_disableLegend = true;
+        icmpIpChart.m_disableLegend = true;
+        icmpPortChart.m_disableLegend = true;
+        icmpIpPortChart.m_disableLegend = true;
+        
+        var columns = new Array();
+        columns.push({name: "Dst IP:Port:Protocol", isDisabled: true});
+        columns.push({name: "Dst IP"});
+        columns.push({name: "Details"});
+        columns.push({name: "Protocol"});
+        columns.push({name: "Packets"});
+
+        grid = new NovaGrid(columns, 0, document.getElementById("packetCountTable"), "grid");
+        grid.SetSortByKey(4);
+        grid.SetRowsPerPage(20);
+        grid.Render();
+
+        
+        var columns = new Array();
+        columns.push({name: "Packet Size (in bytes)"});
+        columns.push({name: "Packets seen"});
+       
+        sizeGrid = new NovaGrid(columns, 0, document.getElementById("packetSizeTable"), "sizeGrid");
+        sizeGrid.SetSortByKey(1);
+        sizeGrid.SetRowsPerPage(20);
+        sizeGrid.Render();
+
+
+        now.ready(function()
+        {
+            function OnNewSuspectDistribute(err, suspect) {
+                OnNewSuspect(err, suspect);
+                OnNewSuspectGraphs(err, suspect);
+            }
+            now.GetSuspect('!{suspect}', '!{interface}', OnNewSuspectDistribute);
+            now.GetIpPortsContacted('!{suspect}', '!{interface}', OnIpPorts);
+            now.GetPacketSizes('!{suspect}', '!{interface}', OnPacketSizes);
+            
+            now.reverseDNS('#{suspectIp}', reverseDNScb);
+            now.GetSuspect('#{suspectIp}', '#{suspectInterface}', OnNewSuspect)
+            
+            setInterval(function() {
+                now.GetSuspect('#{suspectIp}', '#{suspectInterface}', OnNewSuspectDistribute)
+            }, 3000);
+        });
+    }
+
+    function macToString(mac) {
+
+        return new Array( 6 ).join( '00' )    // '000000000000'
+            .match( /../g )            // [ '00', '00', '00', '00', '00', '00' ]
+            .concat( 
+                mac.toString( 16 ).toUpperCase()     // "4a8926c44578"
+                   .match( /.{1,2}/g ) // ["4a", "89", "26", "c4", "45", "78"]
+            )                          // ["00", "00", "00", "00", "00", "00", "4a", "89", "26", "c4", "45", "78"]
+            .reverse()                 // ["78", "45", "c4", "26", "89", "4a", "00", "00", "00", "00", "00", "00", ]
+            .slice( 0, 6 )             // ["78", "45", "c4", "26", "89", "4a" ]
+            .join( ':' )               // "78:45:c4:26:89:4a"
+    }
+
+    function OnNewSuspect(err, suspect) {
+        if (err) {
+            alert("Unable to fetch suspect details. See Javascript console for detailed errors.");
+            console.log(err);
+            return;
+        }
+    
+        var info = "";
+        info += "<TR><TD style='padding-right: 30px;'> IP Address </TD> <TD>" + suspect.ip + "</TD></TR>";
+        info += "<TR><TD style='padding-right: 30px;'> Last Source MAC Address </TD> <TD>" + macToString(suspect.mac) + "</TD></TR>";
+        info += "<TR><TD> Interface </TD> <TD>" + suspect.interface + "</TD></TR>";
+        $("#generalInfo").html(info); 
+        info = "";
+       
+        info += "<TR><TD> # Bytes </TD> <TD>" + numberWithCommas(suspect.count_bytes) + "</TD></TR>";
+        info += "<TR><TD> # TCP Packets </TD> <TD>" + numberWithCommas(suspect.count_tcp)  + "</TD></TR>";
+        info += "<TR><TD> # UDP Packets </TD> <TD>" + numberWithCommas(suspect.count_udp)  + "</TD></TR>";
+        info += "<TR><TD> # ICMP Packets </TD> <TD>" + numberWithCommas(suspect.count_icmp) + "</TD></TR>";
+        info += "<TR style='padding-bottom: 20px'><TD> # Other Packets </TD> <TD>" + numberWithCommas(suspect.count_other) + "</TD></TR>";
+        info += "<TR><TD> # TCP SYN Packets </TD> <TD>" + numberWithCommas(suspect.count_tcpSyn) + "</TD></TR>";
+        info += "<TR><TD> # TCP ACK Packets </TD> <TD>" + numberWithCommas(suspect.count_tcpAck) + "</TD></TR>";
+        info += "<TR><TD> # TCP SYN/ACK Packets </TD> <TD>" + numberWithCommas(suspect.count_tcpSynAck) + "</TD></TR>";
+        info += "<TR><TD> # TCP FIN Packets </TD> <TD>" + numberWithCommas(suspect.count_tcpFin) + "</TD></TR>";
+        info += "<TR><TD> # TCP RST Packets </TD> <TD>" + numberWithCommas(suspect.count_tcpRst) + "</TD></TR>";
+        $("#packetCountTotals").html(info); 
+        info = "";
+        
+        
+        var num = 100*(suspect.count_tcpSyn + suspect.count_tcpSynAck) / (1.0 * suspect.count_tcp);
+        num = isNaN(num) ? 0 : num;
+        info += '<TR><TD> Percent with SYN </TD> <TD> <div class="classification_entry"><div style="width: ' + num.toFixed(0) + '%" class="progressBar">&nbsp;</div><div class="progressText">' + num.toFixed(2) + '</div></div> </TD></TR>';
+        num = 100*(suspect.count_tcpAck + suspect.count_tcpSynAck) / (1.0 * suspect.count_tcp);
+        num = isNaN(num) ? 0 : num;
+        info += '<TR><TD> Percent with ACK </TD> <TD> <div class="classification_entry"><div style="width: ' + num.toFixed(0) + '%" class="progressBar">&nbsp;</div><div class="progressText">' + num.toFixed(2) + '</div></div> </TD></TR>';
+        num = 100*(suspect.count_tcpFin) / (1.0 * suspect.count_tcp);
+        num = isNaN(num) ? 0 : num;
+        info += '<TR><TD> Percent with FIN </TD> <TD> <div class="classification_entry"><div style="width: ' + num.toFixed(0) + '%" class="progressBar">&nbsp;</div><div class="progressText">' + num.toFixed(2) + '</div></div> </TD></TR>';
+        num = 100*(suspect.count_tcpRst) / (1.0 * suspect.count_tcp);
+        num = isNaN(num) ? 0 : num;
+        info += '<TR><TD> Percent with RST </TD> <TD> <div class="classification_entry"><div style="width: ' + num.toFixed(0) + '%" class="progressBar">&nbsp;</div><div class="progressText">' + num.toFixed(2) + '</div></div> </TD></TR>';
+        info += "</TABLE>";
+        $("#tcpFlagCharts").html(info); 
+        info = "";
+        
+        info += "<TR><TD> IP Traffic Distribution </TD> <TD>" + suspect.ip_traffic_distribution + "</TD></TR>";
+        info += "<TR><TD> Port Traffic Distribution </TD> <TD>" + suspect.port_traffic_distribution + "</TD></TR>";
+        info += "<TR><TD> Packet Size Mean </TD> <TD>" + suspect.packet_size_mean + "</TD></TR>";
+        info += "<TR><TD> Packet Size Deviation </TD> <TD>" + suspect.packet_size_deviation + "</TD></TR>";
+        info += "<TR><TD> Distinct IPs Contacted </TD> <TD>" + suspect.distinct_ips + "</TD></TR>";
+        info += "<TR><TD> Distinct TCP Ports Contacted </TD> <TD>" + suspect.distinct_tcp_ports + "</TD></TR>";
+        info += "<TR><TD> Distinct UDP Ports Contacted </TD> <TD>" + suspect.distinct_udp_ports + "</TD></TR>";
+        info += "<TR><TD> Average TCP Ports Per Host</TD> <TD>" + suspect.avg_tcp_ports_per_host + "</TD></TR>";
+        info += "<TR><TD> Average UDP Ports Per Host</TD> <TD>" + suspect.avg_udp_ports_per_host + "</TD></TR>";
+        info += "<TR><TD> Percent TCP SYN Packets </TD> <TD>" + suspect.tcp_percent_syn * 100 + "%</TD></TR>";
+        info += "<TR><TD> Percent TCP SYN ACK Packets </TD> <TD>" + suspect.tcp_percent_synack * 100 + "%</TD></TR>";
+        info += "<TR><TD> Percent TCP FIN Packets </TD> <TD>" + suspect.tcp_percent_fin * 100 + "%</TD></TR>";
+        info += "<TR><TD> Percent TCP RST Packets </TD> <TD>" + suspect.tcp_percent_rst * 100 + "%</TD></TR>";
+        info += "<TR><TD> Percent Haystack Contacted </TD> <TD>" + suspect.haystack_percent_contacted * 100 + "%</TD></TR>";
+        $("#knnFeatures").html(info); 
+        info = "";
+        
+     
+        info += "<B>Overall Classification: </B>" + suspect.classification;
+        info += "<BR><BR><B>Hostile KNN neighbors: </B>" + suspect.hostileNeighbors;
+        info += "<BR><BR><B>Classification Notes</B><br>" + String(suspect.classificationNotes).replace(/\n/g, "<BR />");
+        $("#classificationOutput").html(info); 
+        info = "";
+        
+        
+        arr = new Array();
+        arr.push({name: 'TCP Packets', value: suspect.count_tcp});
+        arr.push({name: 'UDP Packets', value: suspect.count_udp});
+        arr.push({name: 'ICMP Packets', value: suspect.count_icmp});
+        arr.push({name: 'Other', value: suspect.count_other});
+        arr = arr.sort(function(a,b) {return b.value - a.value});
+        protocolChart.Render(arr);
+    }
+
+    function OnPacketSizes(err, results) {
+        if (err) {
+            alert("Unable to fetch suspect details. See Javascript console for detailed errors.");
+            console.log(err);
+            return;
+        }
+
+        for (var r in results) {
+            var row = new Array();
+            row.push(results[r].packetSize);
+            row.push(results[r].count);
+            sizeGrid.PushEntry(row);
+        }
+        sizeGrid.Render();
+
+    }
+
+    function OnIpPorts(err, results) {
+        if (err) {
+            alert("Unable to fetch suspect details. See Javascript console for detailed errors.");
+            console.log(err);
+            return;
+        }
+
+        var tcparr = new Array(); 
+        var udparr = new Array(); 
+        var icmparr = new Array();
+
+        var tcpPortCounts = {};
+        var tcpIpCounts = {};
+        var udpPortCounts = {};
+        var udpIpCounts = {};
+        var icmpTypeCodeCounts = {};
+        var icmpIpCounts = {};
+
+        for (var r in results) {
+            var row = new Array();
+            row.push(results[r].dstip + String(results[r].port) + results[r].type);
+            row.push(results[r].dstip);
+
+            if (results[r].type == "tcp") {
+                row.push("Dst port: " + results[r].port);
+               
+               if (!tcpPortCounts[results[r].port]) {tcpPortCounts[results[r].port] = 0;}
+                if (!tcpIpCounts[results[r].dstip]) {tcpIpCounts[results[r].dstip] = 0;}
+
+                tcpPortCounts[results[r].port] += results[r].count;
+                tcpIpCounts[results[r].dstip] += results[r].count;
+
+                tcparr.push({name: results[r].dstip + ":" + results[r].port, value: results[r].count});
+            } else if (results[r].type == "udp") { 
+                row.push("Dst port: " + results[r].port);
+                if (!udpPortCounts[results[r].port]) {udpPortCounts[results[r].port] = 0;}
+                if (!udpIpCounts[results[r].dstip]) {udpIpCounts[results[r].dstip] = 0;}
+                
+                udpPortCounts[results[r].port] += results[r].count;
+                udpIpCounts[results[r].dstip] += results[r].count;
+                udparr.push({name: results[r].dstip + ":" + results[r].port, value: results[r].count});
+            } else if (results[r].type == "icmp") {
+                var icmpType = results[r].port & 0xF;
+                var icmpCode = (results[r].port >> 8);
+
+                // Replace with string version if we have it
+                if (icmpTypes[icmpType]) {
+                    icmpType = icmpTypes[icmpType];
+                }
+                var icmp = "Type: " + icmpType + " | Code: " + icmpCode;
+                row.push(icmp);
+                
+                if (!icmpTypeCodeCounts[icmp]) {icmpTypeCodeCounts[icmp] = 0;}
+                if (!icmpIpCounts[results[r].dstip]) {icmpIpCounts[results[r].dstip] = 0;}
+                
+                icmpTypeCodeCounts[icmp] += results[r].count;
+                icmpIpCounts[results[r].dstip] += results[r].count;
+                icmparr.push({name: results[r].dstip + " " + icmp, value: results[r].count});
+            } else {
+                row.push("NA");
+            }
+            
+            
+            row.push(results[r].type);
+            row.push(results[r].count);
+            
+            grid.PushEntry(row);
+
+        }
+
+        tcparr = tcparr.sort(function(a,b) {return b.value - a.value});
+        tcpIpPortChart.Render(tcparr);
+        
+        udparr = udparr.sort(function(a,b) {return b.value - a.value});
+        udpIpPortChart.Render(udparr);
+        
+        icmparr = icmparr.sort(function(a,b) {return b.value - a.value});
+        icmpIpPortChart.Render(icmparr);
+
+        
+        var arr = new Array();
+        for (var r in tcpPortCounts) {arr.push({name: r, value: tcpPortCounts[r]});}
+        arr = arr.sort(function(a,b) {return b.value - a.value});
+        tcpPortChart.Render(arr);
+        
+        var arr = new Array();
+        for (var r in tcpIpCounts) {arr.push({name: r, value: tcpIpCounts[r]});}
+        arr = arr.sort(function(a,b) {return b.value - a.value});
+        tcpIpChart.Render(arr);
+       
+
+        var arr = new Array();
+        for (var r in udpIpCounts) {arr.push({name: r, value: udpIpCounts[r]});}
+        arr = arr.sort(function(a,b) {return b.value - a.value});
+        udpIpChart.Render(arr);
+        
+        var arr = new Array();
+        for (var r in udpPortCounts) {arr.push({name: r, value: udpPortCounts[r]});}
+        arr = arr.sort(function(a,b) {return b.value - a.value});
+        udpPortChart.Render(arr);
+       
+
+        var arr = new Array();
+        for (var r in icmpIpCounts) {arr.push({name: r, value: icmpIpCounts[r]});}
+        arr = arr.sort(function(a,b) {return b.value - a.value});
+        icmpIpChart.Render(arr);
+        
+        var arr = new Array();
+        for (var r in icmpTypeCodeCounts) {arr.push({name: r, value: icmpTypeCodeCounts[r]});}
+        arr = arr.sort(function(a,b) {return b.value - a.value});
+        icmpPortChart.Render(arr);
+
+        
+        grid.Render();
+    };
+
+
+    // Everything below this point is for rendering the live graphs
+    var lastSuspectObject = null;
+    var initialized = true;
+    var data = new Array();
+    var classificationData = new Array();
+
+    var gridLinesEnabled = false;
+    var autoscale = false;
+
+    function redrawGraphs()
+    {
+        for(var i = 0; i < 14; i++)
+        {
+            drawGraph('chart' + i, 'p' + i, data, i);
+        }
+    
+        drawGraph('classificationChart', 'classificationChartP', classificationData, 0); 
+    }
+
+    function toggleGridLines()
+    {
+        gridLinesEnabled = $('#enableGridLines').is(':checked');
+        redrawGraphs();
+    }
+
+    function toggleAutoscale()
+    {
+        autoscale = $('#enableAutoScale').is(':checked');
+        redrawGraphs();
+    }
+
+    function markClassificationAs(hostility)
+    {
+        'use strict';
+        var hostilityString;
+        if(hostility == '1')
+        {
+            hostilityString = 'hostile';
+        }
+        else
+        {    
+            hostilityString = 'benign';
+        }
+
+        if(!confirm("This will train the classifiaction engine to match all suspects looking like this one's current state as " + hostilityString + ". Are you sure you want to do this?"))
+        {
+            return;
+        }
+        if(lastSuspectObject == null)
+        {
+            alert('No data recieved for suspect yet');
+            return;
+        }
+
+        var features = lastSuspectObject.features.join(' ');
+ 
+        try
+        {
+           now.addTrainingPoint(lastSuspectObject.ip, lastSuspectObject.interface, features, hostility, addedCb);
+        }
+        catch(err)
+        {
+            console.log('Error was: ' + err);
+            alert('Unable to contact server. Try refreshing the page');
+        }
+    }
+
+    function addedCb(err)
+    {
+        if(err)
+        {
+            alert('There was and error adding the new training point: ' + err);
+        }
+        else
+        {
+            alert('Added suspect point to training data');
+        }
+    }
+    
+    function reverseDNScb(err, domains)
+    {
+        var prefix = '';
+        var suffix = '';
+        if(err != null)
+        {
+            var errorString;
+            if(err.code == 'ENOTFOUND')
+            {
+                errorString = 'No domain name found';
+            }
+            else
+            {
+                errorString = 'Unable to get domain name because of error: ' + err.code;
+            }
+            $('#domain').html(prefix + errorString + suffix);
+        }
+        else
+        {
+            $('#domain').html(prefix + domains + suffix);
+        }
+    }
+
+    function OnNewSuspectGraphs(err, suspect)
+    {
+        if (err) {
+            console.log(err);
+            return;
+        }
+
+        // We throw the first suspect in the graphs twice so it'll have a line instead of nothing
+        if(initialized)
+        {
+            initialized = false;
+            OnNewSuspectGraphs(err, suspect);
+        }
+
+        
+        if(suspect.ip == '#{suspectIp}' && suspect.interface == '#{suspectInterface}')
+        {
+            var row = new Array();
+            row.push(suspect.ip_traffic_distribution);
+            row.push(suspect.port_traffic_distribution);
+            row.push(suspect.packet_size_mean);
+            row.push(suspect.packet_size_deviation);
+            row.push(suspect.distinct_ips);
+            row.push(suspect.distinct_tcp_ports);
+            row.push(suspect.distinct_udp_ports);
+            row.push(suspect.avg_tcp_ports_per_host);
+            row.push(suspect.avg_udp_ports_per_host);
+            row.push(suspect.tcp_percent_syn);
+            row.push(suspect.tcp_percent_fin);
+            row.push(suspect.tcp_percent_rst);
+            row.push(suspect.tcp_percent_synack);
+            row.push(suspect.haystack_percent_contacted);
+            suspect.features = row;
+            
+            lastSuspectObject = suspect;
+            data.push(row);
+
+
+            var classificationArrayWrapper = new Array();
+            classificationArrayWrapper.push(suspect.classification);
+            classificationData.push(classificationArrayWrapper);
+
+            var maxNumberOfPoints = 100;
+            if(data.length > maxNumberOfPoints)
+            {
+                data.shift();
+            }
+
+            if(classificationData.length > maxNumberOfPoints)
+            {
+                classificationData.shift();
+            }
+
+            redrawGraphs();
+
+        }
+
+    };
+
+    function drawGraph(canvas, pID, data, index)
+    {
+        var m_width = 200;
+        var m_height = 200;
+        var border = 15;
+
+        var width = m_width;
+        var height = m_height - border*2;
+        
+        var c = $('#' + canvas)[0];
+        var p = $('#' + pID)[0];
+        var ctx = c.getContext('2d');
+        ctx.clearRect (0, 0,m_width ,m_height);
+       
+        ctx.fillSTyle='#0000FF';
+
+        var minY;
+        var maxY;
+        if(autoscale)
+        {
+            minY = data[0][index];
+            maxY = data[0][index];
+        } else {
+            // Hard coded fixed scale charts between 0 and 1
+            if(canvas == 'classificationChart'
+            || canvas == 'chart0'
+            || canvas == 'chart1'
+            || canvas == 'chart0'
+            || canvas == 'chart9'
+            || canvas == 'chart10'
+            || canvas == 'chart11'
+            || canvas == 'chart12'
+            || canvas == 'chart13')
+            {
+                minY = 0;
+                maxY = 1;
+            } else {
+                minY = data[0][index];
+                maxY = data[0][index];
+            }
+                
+        }
+        
+        if(data.length == 1)
+        {
+            p.innerHTML = '<br> Current: ' + data[0][index].toFixed(12);
+            return;
+        }
+
+
+        var points = new Array();
+        for (var i = 0; i < data.length; i++)
+        {
+            if(data[i][index] > maxY)
+            {
+                maxY = data[i][index];
+            }
+
+            if(data[i][index] < minY)
+            {
+                minY = data[i][index];
+            }
+        }
+
+         
+        for (var i = 0; i < data.length; i++)
+        {
+            var point = new Object();
+            point.x = (width/(data.length - 1))*i;
+
+            if(maxY == minY)
+            {
+                point.y = height/2;
+            } else {
+                point.y = border + height - ((1.0*data[i][index] - minY)/(maxY-minY) * height);
+            }
+            points.push(point);
+        }
+       
+        // Draw grid lines
+        if(gridLinesEnabled)
+        {
+            ctx.strokeStyle='#A1A1A1';
+            ctx.beginPath();
+            ctx.moveTo(0, border);
+            ctx.lineTo(width, border);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, height+border);
+            ctx.lineTo(width, height+border);
+            ctx.stroke();
+            for (var i = 0; i < points.length; i++)
+            {
+                ctx.beginPath();
+                ctx.moveTo(points[i].x,border);
+                ctx.lineTo(points[i].x,height+border);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(0, points[i].y);
+                ctx.lineTo(width, points[i].y);
+                ctx.stroke();
+            }
+        }
+        
+        ctx.fillStyle = 'blue';
+        ctx.font = '10px Arial';
+        ctx.fillText(minY, 0, m_height); 
+        ctx.fillText(maxY, 0, 10);
+        
+
+        
+        ctx.strokeStyle='#FF0000';
+        for (var i = 1; i < points.length; i++)
+        {
+            ctx.beginPath();
+            ctx.moveTo(points[i-1].x, points[i-1].y);
+            ctx.lineTo(points[i].x, points[i].y);
+            ctx.stroke();
+        }
+
+        ctx.fillStyle='#0000FF';
+        for (var i = 0; i < points.length; i++)
+        {
+            ctx.beginPath();
+            ctx.arc(points[i].x,points[i].y,2,0,2*Math.PI);
+            ctx.fill();
+        }
+        
+        
+        var trendString = '';
+        var trendStringCutoff = 25;
+        for (var i = points.length - 2; i >= 0; i--)
+        {
+            if(trendString.length > trendStringCutoff)
+            {
+                break;
+            }
+
+            if(points[i].y > points[i+1].y)
+            {
+                trendString = '+' + trendString;
+            } else if(points[i].y < points[i+1].y)
+            {
+                trendString = '-' + trendString;
+            } else {
+                trendString = '=' + trendString;
+            }
+        }
+
+        p.innerHTML = trendString;
+        p.innerHTML += '<br> Current: ' + data[data.length-1][index].toFixed(12);
+        p.innerHTML += '<br> Delta: ' + (data[data.length-1][index]- data[data.length-2][index]).toFixed(12);
+    }
+

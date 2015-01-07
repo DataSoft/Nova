@@ -1,0 +1,96 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+
+include mixins/headers.jade
+
+extends layout
+
+block headerAdditions
+  script.
+    function generateNewCerts() {
+        var certInfo = {
+            country: $("#country").val()
+            , state: $("#state").val()
+            , city: $("#city").val()
+            , organization: $("#organization").val()
+            , unit: $("#unit").val()
+            , name: $("#name").val()
+            , email: $("#email").val()
+        };
+
+        $("#inputDiv").hide();
+        $("#resultDiv").show();
+
+
+
+        now.generateNewCerts(certInfo, function(err, result) {
+            if (err) {
+                $("#updateResults")[0].innerHTML += "<br><b>ERROR:" + err + "</b>";
+            } else {
+                $("#updateResults")[0].innerHTML += (result.replace(/\n/g, "<br />"));
+                $("#updateResults")[0].innerHTML += "<br><b>Created new key and certificate for Quasar! You must restart Quasar for this to take effect.</b>";
+            }
+        });
+    
+    }
+
+
+block content
+  div#resultDiv(style="display: none")
+    +header("Generating New TLS Keys and Certs")
+      b Generating new certs... this could take a few minutes. Please do not navigate away from this page until this is complete.
+      p#updateResults
+  div#inputDiv
+    +header("Generate New TLS Keys and Certs")
+      p
+        b Leave unwanted or unkown fields blank.
+      table(style="text-align: right")
+        tr
+          td Country Name (2 letter code, eg US)
+          td
+            input#country(type="text")
+        tr
+          td State or Province Name (full name, eg Arizona)
+          td
+            input#state(type="text")
+        tr
+          td Locality Name (eg, city) 
+          td
+            input#city(type="text")
+        tr
+          td Organization Name (eg, company)
+          td
+            input#organization(type="text")
+        tr
+          td Organizational Unit Name (eg, section)
+          td
+            input#unit(type="text")
+        tr
+          td Common Name (eg server fully qualified domain name or your name)
+          td
+            input#name(type="text")
+        tr
+          td Email Address
+          td
+            input#email(type="text")
+
+      button(onclick="generateNewCerts()") Generate New TLS keys and certificates
+
+
+
+
+

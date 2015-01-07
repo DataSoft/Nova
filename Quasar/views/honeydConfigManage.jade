@@ -1,0 +1,1385 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+extends layout
+
+block headerAdditions
+  link(rel='stylesheet', type='text/css', href='novagrid.css', media='screen')
+  link(rel='stylesheet', type='text/css', href='configstyle.css', media='screen')
+  style(type='text/css').
+    a.selectedProfile, a.unselectedProfile {
+        display: block;
+        font-size: 12px;
+        font-weight: bold;
+        border: 1px solid black;
+        padding: 2px;
+        margin: 5px;
+        height: 100%;
+    }
+
+    a.unselectedProfile:hover {
+        background-color: #F1CC91;
+        clear: both;
+    }
+
+    a.selectedProfile {
+        background-color: #E8A02F;
+    }
+
+    a.unselectedProfile {
+        background-color: #E4F2FF;
+    }
+
+    ul {
+        margin-bottom: 20px;
+        display: block; 
+        list-style-type: none;
+    }
+
+    #treeDiv {
+        display: inline-block;
+    }
+
+    li {
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        list-style-type: none;
+    }
+
+    .selectedTab {
+        width: 120px;
+        background-color: #AFD9FF;
+        height: 30px;
+        font-size: 18px;
+        font-weight: bold;
+        border-width: 2px;
+        border-bottom-style: none;
+        border-radius: 0px;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        border-bottom-right-radius: 0px;
+        border-bottom-left-radius: 0px;
+        padding-bottom: 0px;
+        margin-bottom: 0px;
+        margin-left: 10px;
+        margin-right: 10px;
+        cursor: pointer;
+        box-shadow: inset 0 -10px 10px -10px #888, 0 0 2px 2px #888;
+    }
+
+    .unselectedTab {
+        width: 120px;
+        background-color: #E4F2FF;
+        height: 30px;
+        font-size: 18px;
+        font-weight: bold;
+        border-width: 2px;
+        border-bottom-style: none;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        border-bottom-right-radius: 0px;
+        border-bottom-left-radius: 0px;
+        padding-bottom: 0px;
+        margin-bottom: 0px;
+        margin-left: 10px;
+        margin-right: 10px;
+        cursor: pointer;
+        box-shadow: inset 0 -10px 10px -10px #888, 0 0 2px 2px #888;
+    }
+
+    .tabDiv {
+        margin-right: 0;
+        margin-left: 0;
+        padding: 5px 50px 20px 50px;
+        width: 90%;
+        
+        border: 10px;
+        margin-top: 0px;
+        border-style: solid;
+        border-color: #AFD9FF;
+    }
+
+    .tabBottom {
+        margin-right: 0;
+        margin-left: 0;
+        width: 90%;
+       
+        border: 0;
+        margin-top: 0px;
+        margin-bottom: 0px;
+        padding-top: 0px;
+        background-color: #AFD9FF;
+    }
+    
+  script(type='text/javascript', src='scripts/NovaGrid.js')
+  script(type='text/javascript', src='scripts/NovaPiChart.js')
+  script.
+    var grid;
+    var interfaces = !{JSON.stringify(INTERFACES)};
+    var interfaceAliases = !{JSON.stringify(interfaceAliases)}
+    var nodeList = !{JSON.stringify(nodes)};
+    var configurationList = !{JSON.stringify(configurations)};
+    var theDoc = document;
+    var profilesArray = {};
+    var saveProfileObjs = {};
+    var currentConfig = '#{current}';
+    var lightboxProfile;
+    var getSummaryOrNot = true;
+
+    function closeLightbox()
+    {
+      enableBackground($('#setup')[0]);
+      
+      $('#lightbox').css('display', 'none');
+      $('#setup').css('opacity', '1.0');
+      
+      $('#cloneMe').empty();
+      
+      rmLb = false;
+    }
+    
+    function GetSelectedProfiles()
+    {
+        var selected = new Array();
+        for (profile in profilesArray)
+        {
+            if (profilesArray[profile].isSelected)
+            {
+                selected.push(profile);
+            }
+        }
+        return selected;
+    }
+    
+    function UnsetHighlighted(element)
+    {
+        element.className = 'unselectedProfile';
+    }
+    
+    function addChildSelectedItem()
+    {
+      var items = GetSelectedProfiles();
+      if (items.length != 1)
+      {
+        alert('Invalid Selection: Please select only 1 profile for parenting');
+        return;
+      }
+      window.location.href = 'addHoneydProfile?parent=' + items[0];
+    }
+
+    function SetHighlighted(element)
+    {
+        element.className = 'selectedProfile';
+    }
+    
+    function newConfiguration(configName, cloneInfo)
+    {
+      var cloneConfig = cloneInfo;
+      
+      if(cloneInfo == undefined)
+      {
+        console.log('Creating empty configuration ' + configName);
+      }
+      else
+      {
+        console.log('Creating clone configuration ' + configName + ' based on ' + cloneInfo);
+      }
+    }
+    
+    
+    function populateConfigSelect(configs)
+    {
+      $('#configurations').empty();
+      
+      if(configs == undefined || configs == '')
+      {
+        console.log('no configs sent');
+        var option = theDoc.createElement('option');
+        
+        option.value = 'None';
+        option.innerHTML = 'None';
+        option.id = 'None';
+        $('#configurations').append(option);
+      }
+      else
+      {
+        var selected = false;
+        for(var i in configs)
+        {
+          if(configs[i] != '' && configs[i] != undefined)
+          {
+            var option = theDoc.createElement('option');
+            
+            if(!selected && configs[i] == currentConfig)
+            {
+              option.selected = 'selected';
+              selected = true;
+            }
+            
+            option.value = configs[i];
+            option.innerHTML = configs[i];
+            option.id = configs[i];
+            $('#configurations').append(option);
+          }
+        }
+        
+        GetConfigurationSummary();
+      }
+    }
+    
+    function GetConfigurationSummary(configArg)
+    {
+      switchConfiguration();
+      var config;
+      profilesArray = {};
+      
+      var appendH = $('#appendHook');
+      var treeD = $('#treeDiv');
+      var piC = $('#piChart');
+      
+      appendH.empty();
+      treeD.empty();
+      piC.empty();
+      
+      var label = theDoc.createElement('label');
+      label.innerHTML = 'Loading...';
+      treeD.append(label);
+      
+      var label1 = theDoc.createElement('label');
+      label1.innerHTML = 'Loading...';
+      piC.append(label1);
+      
+      if(configArg == undefined)
+      {
+        var element = $('#configurations')[0];
+        config = element.options[element.selectedIndex].value;
+      }
+      else
+      {
+        config = configArg;
+        currentConfig = configArg;
+      }
+      
+      if(typeof now.SwitchConfigurationTo == 'function')
+      {
+        now.SwitchConfigurationTo(config); 
+      }
+      else
+      {
+        console.log('now.SwitchConfigurationTo(configName) is not defined, doing nothing');
+        return;
+      }
+      
+      if(typeof now.GetConfigSummary == 'function')
+      {
+        now.GetConfigSummary(config, function(scriptProfileBindings, profileObj, profiles, nodes){
+          // manipulate elements here (i.e. pi charts, text, tables, etc.)
+          // Will all be contained in the object parseMe that will use the 
+          // object literal notation of javascript to allow the server side
+          // to do the calculations, and then send exactly the data required to
+          // the browser.
+          saveProfileObjs = profileObj;
+          for(var i in scriptProfileBindings)
+          {
+            var tr = theDoc.createElement('tr');
+            var td0 = theDoc.createElement('td');
+            var td1 = theDoc.createElement('td');
+            var scriptName = theDoc.createElement('div');
+            
+            var profilesPorts = theDoc.createElement('div');
+                        
+            scriptName.innerHTML = i;
+            profilesPorts.innerHTML = scriptProfileBindings[i];
+            td0.appendChild(scriptName);
+            td1.appendChild(profilesPorts);
+            tr.appendChild(td0);
+            tr.appendChild(td1);
+            appendH.append(tr);
+          }
+          
+          if(scriptProfileBindings.length == 0)
+          {
+            var tr = theDoc.createElement('tr');
+            var td0 = theDoc.createElement('td0');
+            var td1 = theDoc.createElement('td1');
+            var label0 = theDoc.createElement('div');
+            var label1 = theDoc.createElement('div');
+            label0.innerHTML = 'N/A';
+            label1.innerHTML = 'N/A';
+            td0.appendChild(label0);
+            td1.appendChild(label1);
+            tr.appendChild(td0);
+            tr.appendChild(td1);
+            appendH.append(tr);
+          }
+          
+          for(var i in profileObj)
+          {
+            var profile = {};
+            profile.name = profileObj[i].name;
+            profile.parent = profileObj[i].parent;
+            profile.children = [];
+            profile.isSelected = false;
+            profile.listElement = null;
+            profilesArray[profile.name] = profile;
+          }
+          
+          for(var i in profilesArray)
+          {
+            for(var j in profilesArray)
+            {
+              if(profilesArray[j].parent == profilesArray[i].name)
+              {
+                profilesArray[i].children.push(profilesArray[j].name);
+              }
+            }
+          }
+          
+          treeD.empty();
+          
+          var drawNode = function(profile, parentDOMNode){
+            var li = theDoc.createElement('li');
+            var a = theDoc.createElement('a');
+            
+            profilesArray[profile].listElement = a;
+            a.innerHTML = profile;
+            a.className = 'unselectedProfile';
+            a.setAttribute('onclick', 'onProfileClicked("' + profile + '")');
+            
+            li.appendChild(a);
+            parentDOMNode.appendChild(li);
+            
+            if(profilesArray[profile].children.length)
+            {
+              var ul = theDoc.createElement('ul');
+              li.appendChild(ul);  
+            }
+            
+            for(var i = 0; i < profilesArray[profile].children.length; i++)
+            {
+              drawNode(profilesArray[profilesArray[profile].children[i]].name, ul);
+            }
+          }
+          
+          drawNode('default', $('#treeDiv')[0]);
+          
+          var nodesPerProfile = {};
+          var piChartRender = [];
+          var piChartRender2 = [];
+          
+          piC.empty();
+          $('#piChart2').empty();
+
+          var nodesPerInterface = {};
+
+          nodeList = nodes;
+          for(var i in nodes)
+          {
+            if(nodesPerProfile[nodes[i].pfile] === undefined)
+            {
+              nodesPerProfile[nodes[i].pfile] = 1;
+            }
+            else
+            {
+              nodesPerProfile[nodes[i].pfile]++;
+            }
+
+
+            if (nodesPerInterface[nodes[i].interface] == undefined)
+            {
+                nodesPerInterface[nodes[i].interface] = 1;
+            }
+            else
+            {
+                nodesPerInterface[nodes[i].interface]++;
+            }
+          }
+          
+          for(var pfile in nodesPerProfile)
+          {
+            var p = {};
+            p.name = pfile;
+            p.value = nodesPerProfile[pfile];
+            piChartRender.push(p);
+          }
+
+          for (var ethinterface in nodesPerInterface)
+          {
+            var aliasedName = ethinterface;
+            var interfaceIndex = interfaces.indexOf(ethinterface);
+            if (interfaceIndex != -1) {
+                aliasedName = interfaceAliases[interfaceIndex];
+            }
+            var p = {name: aliasedName, value: nodesPerInterface[ethinterface]};
+            piChartRender2.push(p);
+          }
+          
+           var pi = new NovaPiChart('piChart', 'Nodes by Profile', 200, 'deleteByProfile');
+           pi.Render(piChartRender);
+           
+           var pi2 = new NovaPiChart('piChart2', 'Nodes by Interface', 200, 'deleteByInterface');
+           pi2.Render(piChartRender2);
+
+           LoadNodeGrid();
+        });
+      }
+      else
+      {
+        console.log('now.GetConfigSummary(configName, callback) is not defined, doing nothing');
+        return;
+      }
+      setTimeout(function(){
+        getSummaryOrNot = true;
+      }, 2000);
+    }
+    
+    function showLightBox(divIndex)
+    {
+      disableBackground($('#setup')[0]);
+      
+      $('#setup').css('opacity', '0.5');
+      $('#lightbox').css('display', 'block');
+      
+      if(divIndex == '0')
+      {
+        $('#addConfigForm').css('display', 'block');
+        $('#newName').attr('value', '');
+        $('#cloneConfigForm').css('display', 'none');
+        $('#profileInfo').css('display', 'none');
+      }
+      else if(divIndex == '1')
+      {
+        $('#addConfigForm').css('display', 'none');
+        $('#cloneConfigForm').css('display', 'block');
+        $('#newNameClone').attr('value', '');
+        $('#profileInfo').css('display', 'none');
+        
+        var cloneMe = $('#cloneMe');
+        
+        for(var i in configurationList)
+        {
+          if(configurationList[i] != '' && configurationList[i] != undefined)
+          {
+            var option = theDoc.createElement('option');
+            
+            option.value = configurationList[i];
+            option.innerHTML = configurationList[i];
+            option.id = configurationList[i];
+            cloneMe.append(option);
+          }
+        }
+      }
+      else if(divIndex == '2')
+      {
+        $('#addConfigForm').css('display', 'none');
+        $('#cloneConfigForm').css('display', 'none');
+        $('#newNameClone').attr('value', '');
+        $('#newName').attr('value', '');
+        $('#profileInfo').css('display', 'block');
+      }
+      else
+      {
+        console.log('Unknown divIndex, doing nothing');
+        closeLightbox();
+      }
+    }
+    
+    function checkExistingName(configName)
+    {
+      for(var i in configurationList)
+      {
+        if(configurationList[i] == configName)
+        {
+          return true;
+        }
+      }
+      
+      return false;
+    }
+    
+    function checkParametersAdd()
+    {
+      var value = $('#newName').val();
+      if(value.val() == '')
+      {
+        alert('Must give a new name for New Haystacks');
+        return false;
+      }
+      else if(checkExistingName(value.val()) == true)
+      {
+        alert('Cannot add cloned configuration that has the same name as a present configuration');
+        return false;
+      }
+      else
+      {
+        return true;
+      }
+    }
+    
+    function checkParametersClone()
+    { 
+      var value = $('#newNameClone').val();
+      if(value == '')
+      {
+        alert('Must give a new name for Cloned Haystacks');
+        return false;
+      }
+      else if(checkExistingName(value) == true)
+      {
+        alert('Cannot add cloned configuration that has the same name as a present configuration');
+        return false;
+      }
+      else
+      {
+        return true;
+      }      
+    }
+    
+    function removeConfig()
+    {
+      var configToRemove = $('#configurations').val();
+      
+      if($("#configurations option").size() == 1)
+      {
+        alert('Cannot remove all haystack configurations! Must have at least one.');
+        return;
+      }
+      else if(confirm('Are you sure you want to remove configuration ' + configToRemove + '? This cannot be undone.'))
+      {
+        if(typeof now.RemoveConfiguration == 'function')
+        {
+          now.RemoveConfiguration(configToRemove, function(name){
+            $('#default').attr('selected', true);
+            $('#' + name).remove();
+            
+            for(var i in configurationList)
+            {
+              if(configurationList[i] == name)
+              {
+                configurationList[i] = undefined;
+              }
+            }
+            
+            for(var i in saveProfileObjs)
+            {
+              if(saveProfileObjs[i].name == name)
+              {
+                saveProfileObjs[i] = undefined;
+              }
+            }
+            
+            GetConfigurationSummary();
+          });
+        }
+        else
+        {
+          alert('Could not remove configuration, now.RemoveConfiguration not found');
+        }
+      }
+      else
+      {
+        return;
+      }
+    }
+    
+    function onProfileClicked(profile)
+    {
+        var ctrlKeyPressed = true;
+        if(typeof(event) !== 'undefined')
+        {
+            if(!event.ctrlKey)
+            {
+                ctrlKeyPressed = false;
+            }
+            else
+            {
+                ctrlKeyPressed = true;
+            }
+        }
+
+        if(!ctrlKeyPressed)
+        {
+            for(entry in profilesArray)
+            {
+                profilesArray[entry].isSelected = false;
+                UnsetHighlighted(profilesArray[entry].listElement);
+            }
+        }
+
+        profilesArray[profile].isSelected = !profilesArray[profile].isSelected;
+        if(profilesArray[profile].isSelected)
+        {
+            SetHighlighted(profilesArray[profile].listElement);
+        }
+        else
+        {
+            UnsetHighlighted(profilesArray[profile].listElement);
+        }
+    }
+    
+    
+    function getConfig()
+    {
+      return $('#configurations').val();
+    }
+    
+    function confirmHaystackRestart()
+    {
+      now.IsHaystackUp(function(status){
+        // Nothing to do if the haystack is already down
+        if (!status) {
+            return;
+        }
+
+        var restartHaystack = confirm('You must restart the haystack for this to take effect. Restart it now?');
+        if(status == true && restartHaystack)
+        {
+          now.WriteHoneydConfig(function(){
+            now.RestartHaystack();
+          });
+        }
+        else
+        {
+          return;
+        }
+      });
+    }
+    
+    function switchConfiguration()
+    {
+      if(typeof now.SwitchConfigurationTo == 'function')
+      {
+        var config = $('#configurations').val();
+        if (config == currentConfig) {return;}
+        currentConfig = config;
+        now.SwitchConfigurationTo(config, function() {
+            confirmHaystackRestart();
+        });
+      }
+    }
+    
+    function disableBackground(source)
+    {
+      var disableUs = source.childNodes;
+      for(var i in disableUs)
+      {
+        if(typeof disableUs[i] == 'object' && disableUs[i].tagName != undefined)
+        {
+          disableUs[i].disabled = true;
+          if(disableUs[i].hasChildNodes())
+          {
+            disableBackground(disableUs[i]);
+          }
+        }
+      }
+    }
+
+    function enableBackground(source)
+    {
+      var enableUs = source.childNodes;
+      for(var i in enableUs)
+      {
+        if(typeof enableUs[i] == 'object' && enableUs[i].tagName != undefined)
+        {
+          enableUs[i].disabled = false;
+          if(enableUs[i].hasChildNodes())
+          {
+            enableBackground(enableUs[i]);
+          }
+        }
+      }
+    }
+    
+    var rmLb = false;
+    
+    function handleOnclick(e)
+    {
+      var evt = (e ? e : window.event);
+      var source = evt.target || evt.srcElement;
+      var loc = document.location.href;
+      if(loc.indexOf('/suspects') != -1)
+      {
+        removeContextMenu(); 
+      }
+      if(rmLb && checkIfLightboxChild(source) == 'false' && (loc.indexOf('/autoConfig') == -1))
+      {
+        closeLightbox();
+      }
+      else if($('#lightbox').css('display') == 'block')
+      {
+        rmLb = true;
+      }
+    }
+    
+    function checkIfLightboxChild(source)
+    {
+      if(source.id != 'lightbox' && source.tagName != 'HTML')
+      {
+        return checkIfLightboxChild(source.parentNode);
+      }        
+      else if(source.id == 'lightbox')
+      {
+        return 'true';
+      }
+      else if(source.tagName == 'HTML')
+      {
+        return 'false';
+      }
+    }
+    
+    function generateDefaultRows(tcp, udp, icmp)
+    {
+      var tr0 = theDoc.createElement('tr');
+      var td0 = theDoc.createElement('td');
+      td0.innerHTML = 'default';
+      var td1 = theDoc.createElement('td');
+      td1.innerHTML = 'tcp';
+      var td2 = theDoc.createElement('td');
+      td2.innerHTML = tcp;
+      tr0.appendChild(td0);
+      tr0.appendChild(td1);
+      tr0.appendChild(td2);
+      $('#portsetHook').append(tr0);
+      
+      var tr1 = theDoc.createElement('tr');
+      var td3 = theDoc.createElement('td');
+      td3.innerHTML = 'default';
+      var td4 = theDoc.createElement('td');
+      td4.innerHTML = 'udp';
+      var td5 = theDoc.createElement('td');
+      td5.innerHTML = udp;
+      tr1.appendChild(td3);
+      tr1.appendChild(td4);
+      tr1.appendChild(td5);
+      $('#portsetHook').append(tr1);
+      
+      var tr2 = theDoc.createElement('tr');
+      var td6 = theDoc.createElement('td');
+      td6.innerHTML = 'default';
+      var td7 = theDoc.createElement('td');
+      td7.innerHTML = 'icmp';
+      var td8 = theDoc.createElement('td');
+      td8.innerHTML = icmp;
+      tr2.appendChild(td6);
+      tr2.appendChild(td7);
+      tr2.appendChild(td8);
+      $('#portsetHook').append(tr2);
+    }
+    
+    function generateExceptionRow(num, proto, behav)
+    {
+      var tr0 = theDoc.createElement('tr');
+      var td0 = theDoc.createElement('td');
+      td0.innerHTML = num;
+      var td1 = theDoc.createElement('td');
+      td1.innerHTML = proto;
+      var td2 = theDoc.createElement('td');
+      td2.innerHTML = behav;
+      tr0.appendChild(td0);
+      tr0.appendChild(td1);
+      tr0.appendChild(td2);
+      $('#portsetHook').append(tr0);
+    }
+    
+    function redoGrid()
+    {
+      $('#portsetHook').empty();
+      var desired = $('#portsetSelect')[0].options[$('#portsetSelect')[0].selectedIndex].value;
+      now.GetPortSets(lightboxProfile, function(portset){
+        for(var i in portset)
+        {
+          if(desired == portset[i].setName)
+          {
+            generateDefaultRows(portset[i].TCPBehavior, portset[i].UDPBehavior, portset[i].ICMPBehavior);
+            for(var port in portset[i].PortExceptions)
+            {
+              generateExceptionRow(portset[i].PortExceptions[port].portNum, portset[i].PortExceptions[port].protocol, portset[i].PortExceptions[port].behavior);
+            }
+          }
+        }
+      });
+    }
+    
+    function checkIfRestartNeeded(haystackUp)
+    {
+      if (haystackUp)
+      {
+        var restartHaystack = confirm('You must restart the haystack for this to take effect. Restart it now?');
+        if (restartHaystack)
+        {
+          now.RestartHaystack(function() {
+            location.reload(true);
+          });
+        } else {
+          location.reload(true);
+        }
+      } else {
+        location.reload(true);
+      }
+    }
+    
+    function errorMessageCallback(success, message)
+    {
+      if(success != true)
+      {
+        alert('Unable to complete operation due to error: ' + message);
+        location.reload(true);
+        return;
+      }
+      now.IsHaystackUp(checkIfRestartNeeded); 
+    }
+
+    function deleteAllNodes()
+    {
+      var gridElements = grid.GetElements();
+      var passToDeleteNodes = [];
+      
+      for(var i in gridElements)
+      {
+        passToDeleteNodes.push(i);
+      }
+      try
+      {
+        now.deleteNodes(passToDeleteNodes, errorMessageCallback);
+      }
+      catch(err)
+      {
+        alert('Action failed because unable to connect to server! Please try refreshing the page and trying again.');
+        console.log('err was: ' + err);
+      }
+    }
+    
+    function deleteSelectedItems()
+    {
+      var items = grid.GetSelected();
+
+      if (items.length == 0) {
+        alert("No nodes were selected to delete!");
+        return;
+      }
+     
+      for(var i in items)
+      {
+        grid.DeleteRow(items[i]);
+      }
+     
+      try
+      {
+        now.deleteNodes(items, errorMessageCallback);
+      }
+      catch(err)
+      {
+        alert('Action failed because unable to connect to server! Please try refreshing the page and trying again.');
+        console.log('err was: ' + err);
+      }   
+      grid.Render();
+    }
+
+    function deleteByProfile(profileName)
+    {
+      var gridElements = grid.GetElements();
+      var passToDeleteNodes = [];
+      for(var i in gridElements)
+      {
+        if(gridElements[i][4] === profileName)
+        {
+          passToDeleteNodes.push(gridElements[i][3]);
+          grid.DeleteRow(gridElements[i][3]);
+        }
+      }
+      try
+      {
+        now.deleteNodes(passToDeleteNodes, errorMessageCallback);
+      }
+      catch(err)
+      {
+        alert('Action failed because unable to connect to server! Please try refreshing the page and trying again.');
+        console.log('err was: ' + err);
+      }
+    }
+    
+    function deleteByInterface(interfaceName)
+    {
+      var gridElements = grid.GetElements();
+      var passToDeleteNodes = [];
+      for(var i in gridElements)
+      {
+        if(gridElements[i][2] === interfaceName)
+        {
+          passToDeleteNodes.push(gridElements[i][3]);
+          grid.DeleteRow(gridElements[i][3]);
+        }
+      }
+      try
+      {
+        now.deleteNodes(passToDeleteNodes, errorMessageCallback);
+      }
+      catch(err)
+      {
+        alert('Action failed because unable to connect to server! Please try refreshing the page and trying again.');
+        console.log('err was: ' + err);
+      }
+    }
+    
+
+    function changeSelectedInterfaces()
+    {
+      var items = grid.GetSelected();
+      if(items != '' && items != undefined)
+      {
+        var newInterface = prompt("Change selected nodes' interface to ", 'new interface');
+        if(newInterface == '' || newInterface == undefined)
+        {
+          return;
+        }
+        else
+        {
+          var change = false;
+          for(var i in interfaces)
+          {
+            if(newInterface == interfaces[i])
+            {
+              change = true;
+            }
+          }
+          if(change == true)
+          {
+            now.ChangeNodeInterfaces(items, newInterface, function(){
+              location.reload(true);
+            }); 
+          }
+          else
+          {
+            alert('That is not a valid interface! The choices are ' + interfaces.join());
+            changeSelectedInterfaces();
+          }
+        }
+      }
+      else
+      {
+        alert('Must select some nodes first!');
+      }
+    }
+    function dhcpStatusCallback(dhcpNodes)
+    {
+        
+        // Clear existing entries
+        for (var i in grid.GetElements())
+        {
+            if (grid.GetElements()[i].addressSet)
+            {
+                var oldRow = grid.m_elements[i];
+                oldRow[1] = 'DHCP';
+                oldRow.addressSet = false;
+                grid.PushEntry(oldRow);
+                grid.Render();
+            }
+        }
+
+        // Add new entries
+        for (var i in dhcpNodes)
+        {
+            var mac = dhcpNodes[i].mac.replace(/ /, '');
+            if (grid.GetElements()[mac] !== undefined)
+            {
+                var oldRow = grid.m_elements[mac];
+                if (dhcpNodes[i].current) {
+                    oldRow[1] = 'DHCP (currently ' + dhcpNodes[i].ip + ')';
+                } else {
+                    oldRow[1] = 'DHCP (last seen as ' + dhcpNodes[i].ip + ')';
+                }
+                oldRow.addressSet = true;
+                grid.PushEntry(oldRow);
+                grid.Render();
+            }
+        }
+    }
+    
+    function checkForEditInterface()
+    {
+      if(interfaces.length > 1)
+      {
+        var button = document.createElement('a');
+        button.setAttribute('onclick', 'changeSelectedInterfaces()');
+        button.setAttribute('class', 'button');
+        button.innerHTML = '<img src="images/edit.png" class="buttonIcon"/><span class="buttonSpan">Change Node Interfaces</span>';
+        $('#generateHook').append(button);
+      }
+    }
+    
+    function editSelectedProfileItem()
+    {
+      var items = GetSelectedProfiles();
+      if (items.length != 1)
+      {
+        alert('Invalid Selection: Please select only 1 profile for editing');
+        return;
+      }
+      window.location.href = 'editHoneydProfile?profile=' + items[0];
+    }
+    function deleteSelectedProfileItems()
+    {
+      var names = GetSelectedProfiles();
+      if (names.length == 0) {
+        alert("No profiles selected to delete!");
+        return;
+      }
+     
+      try 
+      {
+        now.deleteProfiles(names, errorMessageCallback);
+      }
+      catch(err)
+      {
+        alert('Action failed because unable to connect to server! Please try refreshing the page and trying again.');
+        console.log('err was: ' + err);
+      }
+    }
+    
+    function editSelectedItem()
+    {
+      var items = grid.GetSelected();
+      if (items.length != 1)
+      {
+        alert('You can only edit one node at a time');
+        return;
+      }
+
+      var nodeName = items[0];
+
+      if (nodeName == 'Doppelganger') 
+      {
+        alert('The Doppelganger node can not be edited here');
+        return; 
+      }
+      window.location.href = 'editHoneydNode?node=' + nodeName;
+    }
+
+    function chartInterfaceChanged()
+    {
+        var currentInterface = $("#currentChartInterface").val();
+          
+        var piChartRender = [];
+        var nodesPerProfile = {};
+
+        for(var i in nodeList)
+        { 
+          if (currentInterface != "All Interfaces" && currentInterface != nodeList[i].interface) {
+            continue;
+          }
+
+          if(nodesPerProfile[nodeList[i].pfile] === undefined)
+          {
+            nodesPerProfile[nodeList[i].pfile] = 1;
+          }
+          else
+          {
+            nodesPerProfile[nodeList[i].pfile]++;
+          }
+        }
+        
+        for(var pfile in nodesPerProfile)
+        {
+          var p = {};
+          p.name = pfile;
+          p.value = nodesPerProfile[pfile];
+          piChartRender.push(p);
+        }
+
+        $('#piChart').empty();
+        var pi = new NovaPiChart('piChart', 'Nodes by Profile', 200, 'deleteByProfile');
+        pi.Render(piChartRender);
+
+    }
+
+    function LoadNodeGrid()
+    {
+        var gridStructure = [];
+        gridStructure.push({name: 'Enabled'});
+        gridStructure.push({name: 'IP'});
+        gridStructure.push({name: 'Interface'});
+        gridStructure.push({name: 'MAC'});
+        gridStructure.push({name: 'Profile'});
+        
+        grid = new NovaGrid(gridStructure, 3, document.getElementById('nodeTable'), 'grid', true);
+        
+        grid.SetSortByKey(1);
+        grid.SetRowsPerPage(25);
+      
+         for(var i in nodeList)
+         {
+           var row = [];
+           row.push(String(nodeList[i].enabled));
+           
+           if(nodeList[i].ip != 'DHCP') 
+           {
+             row.push(String(nodeList[i].ip));
+           } 
+           else 
+           {
+             row.push('DHCP');
+           }
+           
+           var alias = '';
+           for(var j = 0; j < interfaces.length; j++) 
+           {
+             if(interfaces[j] == nodeList[i].interface) 
+             {
+               alias = interfaceAliases[j];
+             }
+           }
+
+           row.push(alias); 
+
+           row.push(String(nodeList[i].mac));
+           row.push(String(nodeList[i].pfile));
+
+           grid.PushEntry(row);
+         }
+         
+         grid.Render();
+      
+         var gridElements = grid.GetElements();
+    }
+    
+    var initialized = false;
+    function init(){
+      now.ready(function()
+      {
+        if (initialized) {return;}
+        initialized = true;
+
+        populateConfigSelect(configurationList);
+        LoadNodeGrid();
+
+        setInterval(function() {now.GetHaystackDHCPStatus(dhcpStatusCallback);}, 2000);
+        checkForEditInterface();
+      });
+
+      showTab('#{tab}');
+    };
+
+    function showTab(tab) {
+        var tabNames = [];
+        tabNames.push('settingsGroups');
+        tabNames.push('settingsProfiles');
+        tabNames.push('settingsNodes');
+        tabNames.push('settingsScripts');
+
+        for (var i = 0; i < tabNames.length; i++) {
+            $('#' + tabNames[i]).css('display', 'none');
+            $('#b' + tabNames[i])[0].className = 'unselectedTab';
+        }
+        
+        window.history.replaceState('', '', '/honeydConfigManage?tab=' + tab);
+
+        $('#' + tab).css('display', 'block');
+        $('#b' + tab)[0].className = 'selectedTab';
+    }
+  
+block content
+  div#setup(onclick='handleOnclick(event);')
+    button.selectedTab#bsettingsGroups(onclick='showTab("settingsGroups")') Haystacks
+    button.unselectedTab#bsettingsProfiles(onclick='showTab("settingsProfiles")') Profiles
+    button.unselectedTab#bsettingsNodes(onclick='showTab("settingsNodes")') Nodes
+    button.unselectedTab#bsettingsScripts(onclick='showTab("settingsScripts")') Scripts
+
+    
+    div.contentBox#settingsGroups
+      h1
+        a(href="help#haystack", target="_blank")
+          img.helpIcon(src="/images/about.png", style="")
+        | Edit Haystacks
+
+      button#addConfig(onclick='showLightBox("0")', title='Create a new configuration group from scratch')
+        img.buttonIcon(src='images/add.png') 
+        span.buttonSpan Add Haystack
+      button#cloneConfig(onclick='showLightBox("1")', title='Create a new configuration group by cloning an existing configuration')
+        img.buttonIcon(src='images/add.png') 
+        span.buttonSpan Clone Haystack
+      
+      button(onclick='window.location="/autoConfig"', title='Run the haystack autoconfiguration tool to create honeypots that mimic an existing network') 
+        img.buttonIcon(src='images/details.png')
+        span.buttonSpan Create Haystack From Network Scan
+      
+      br
+      br
+      h2 Current Haystack
+      select#configurations(onchange='GetConfigurationSummary()')
+      button#removeConfig(onclick='removeConfig()', title='Delete the currently selected group')
+        img.buttonIcon(src='images/delete.png') 
+        span.buttonSpan Delete Haystack
+      br
+      br
+      br
+      div(style="display: inline-block;")
+        span Only show interface 
+        select#currentChartInterface(onchange='chartInterfaceChanged();')'
+          option All Interfaces
+          each interface, i in INTERFACES
+            option #{interface}
+        br
+        div#piChart(style='display: inline-block; margin: 10px')
+      div#piChart2(style='display: inline-block; margin: 10px; float: left')
+      br
+
+
+    div.contentBox#settingsProfiles(style='display: none;')
+      h1 
+        a(href="help#profile", target="_blank")
+          img.helpIcon(src="/images/about.png", style="")
+        | Edit Profiles
+      div#treeDiv
+      br
+      br
+     
+
+      button(onClick='deleteSelectedProfileItems()')
+        img.buttonIcon(src='images/delete.png')
+        span.buttonSpan Delete Selected Profiles 
+      
+      button(onClick='editSelectedProfileItem()')
+        img.buttonIcon(src='images/edit.png')
+        span.buttonSpan Edit Selected Profile
+      
+      button(onClick='addChildSelectedItem()') 
+        img.buttonIcon(src='images/add.png')
+        span.buttonSpan Add Child Profile
+    
+    div.contentBox#settingsNodes(style='display: none;')
+      h1
+        a(href="help#nodes", target="_blank")
+          img.helpIcon(src="/images/about.png", style="")
+        | Edit Nodes
+      div#node_header
+      span#nodeTable(style="display: inline-block;")
+      br
+      br
+      
+      
+      button.button(onclick='window.location = "/configHoneydNodes"')
+        img.buttonIcon(src='images/add.png')
+        span.buttonSpan Add New Nodes
+      
+      button.button(onclick='editSelectedItem()')
+        img.buttonIcon(src='images/edit.png')
+        span.buttonSpan Edit Selected Node
+
+      button.button(onclick='deleteSelectedItems()') 
+        img.buttonIcon(src='images/delete.png')
+        span.buttonSpan Delete Selected Nodes
+
+
+      br
+      br
+      
+      button.button(onclick='window.location="/nodeState.csv"')
+        img.buttonIcon(src='images/save.png')
+        span.buttonSpan Save as CSV
+      br
+      
+      button.button(onclick='window.location="/editHoneydNode?node=doppelganger"')
+        img.buttonIcon(src='images/edit.png')
+        span Edit Doppelganger
+
+      br
+      button.button(onclick='deleteAllNodes()')
+        img.buttonIcon(src='images/delete.png')
+        span.buttonSpan Delete All Nodes
+      br
+      
+      br
+      div#generateHook
+
+      br
+
+    div.contentBox#settingsScripts(style='display: none;')
+      h1
+        a(href="help#scripts", target="_blank")
+          img.helpIcon(src="/images/about.png", style="")
+        | Current Script Usage
+      button(onclick='window.location="/scripts"')
+        img.buttonIcon(src='images/edit.png') 
+        span.buttonSpan Edit Scripts
+      br
+      br
+      
+      table(border='1', id='sizeAnchor')
+        thead
+          tr
+            th(style='background-color: #d0e9fc;') Scripts
+            th(style='background-color: #d0e9fc;') Profile:Port Binding
+        tbody#appendHook      
+  
+  div#lightbox(class='white_content')
+    div#addConfigForm
+      form(method='post', id='addConfig', onsubmit='return checkParametersAdd();')
+        label Name For New Haystack
+        br
+        input#newName(name='newName', onkeypress='if(event.keyCode == 13){document.getElementById("addConfig").submit()}')
+        br
+        button#submitAdd
+          img.buttonIcon(src='images/add.png')
+          span.buttonSpan Create new haystack
+    div#cloneConfigForm
+      form(method='post', id='cloneConfig', onsubmit='return checkParametersClone();')
+        label Select Haystack to Clone:
+        br
+        select#cloneMe(name='cloneSelect')
+        br
+        label Name For Cloned Haystack
+        br
+        input#newNameClone(name='newNameClone', onkeypress='if(event.keyCode == 13){document.getElementById("cloneConfig").submit()}')
+        br
+        button#submitClone
+          img.buttonIcon(src='images/add.png')
+          span.buttonSpan Create new haystack
+    div#profileInfo
+      h1#profileName(style='font-weight: bold;')
+      h2 Misc. Information
+      div(style='border: 2px solid #E8A02F; width: 250px')
+        label#dropPercent
+        br
+        label#fixedOrUptime
+        br
+      br
+      h2 Ethernet Info      
+      table(border='1 solid')
+        thead
+          th(style='background-color: #d0e9fc;') Vendor
+          th(style='background-color: #d0e9fc;') Count
+        tbody#vendors
+      br
+      h2 Port Sets
+      br
+      select#portsetSelect(onchange='redoGrid()', style='width: 200px')
+      br
+      br
+      br
+      div(style='width:100%; height: 200px; overflow-y: scroll;')
+        table(border='1')
+          thead
+            tr
+              th(style='background-color: #d0e9fc;') Port Number
+              th(style='background-color: #d0e9fc;') Protocol
+              th(style='background-color: #d0e9fc;') Behavior
+          tbody#portsetHook
+      br
+    button#closeLB(onclick='closeLightbox()')
+      img.buttonIcon(src='images/cancel.png')
+      span.buttonSpan Cancel
+
+

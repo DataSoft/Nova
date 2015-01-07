@@ -1,0 +1,77 @@
+.TH NOVACLI "1" "2013" "12.12"
+
+.SH NAME
+.B novacli
+\- The Nova command line interface
+
+.SH SYNOPSIS
+.B novacli
+
+.SH DESCRIPTION
+.PP
+.I novacli
+is the command line interface for controlling and communicating with the Nova daemon. The CLI has the ability to start and stop the haystack and the Nova daemon, and also has the ability to query it for status and state information. Run novacli with the --help option to display usage options.
+
+
+.TP
+novacli status nova|haystack
+Outputs if the nova or haystack process is running and responding
+
+.TP
+novacli start nova|capture|haystack [debug]
+Starts the nova or haystack process, or starts capture on existing process. 'debug' will run in a blocking and verbose mode.
+
+.TP
+novacli stop nova|capture|haystack
+Stops the nova, haystack process, or live packet capture
+
+.TP
+novacli list all|hostile|benign
+Outputs the current list of suspect IP addresses of a given type
+
+.TP
+novacli get all|hostile|benign [csv]
+Outputs the details for all suspects of a type (all, hostile only, or benign only). Optionally can be output in CSV format.
+
+.TP
+novacli get interface xxx.xxx.xxx.xxx
+Outputs the details of a specific suspect with IP address xxx.xxx.xxx.xxx
+
+.TP
+novacli get data xxx.xxx.xxx.xxx
+Outputs the details of a specific suspect with IP address xxx.xxx.xxx.xxx, including low level data
+
+.TP
+novacli clear all
+Clears all saved data for suspects
+
+.TP
+novacli clear interface xxx.xxx.xxx.xxx
+Clears all saved data for a specific suspect
+
+.TP
+novacli writesetting SETTING VALUE
+Writes setting to configuration file
+
+.TP
+novacli readsetting SETTING
+Reads setting from configuration file
+
+.TP
+novacli listsettings
+Lists settings that can be set in the configuration file
+
+.TP
+novacli monitor
+Monitors live output from novad (mainly for debugging)
+
+.TP
+novacli resetpassword
+Reset the Quasar password to nova/toor (add nova user if doesn't exist, otherwise change password to 'toor')
+
+
+.SH COPYRIGHT
+.PP
+Nova is Copyright (c) 2011 - 2013 DataSoft Corporation
+.PP
+Nova is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. Nova is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with Nova. If not, see <http://www.gnu.org/licenses/>.

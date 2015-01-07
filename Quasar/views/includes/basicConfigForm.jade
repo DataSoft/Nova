@@ -1,0 +1,706 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+style.
+  label#protoheader {
+    border-top-left-radius:4px;
+    border-bottom-left-radius:4px;
+    background-color: #E4F2FF;
+    background-position: center top;
+    background-repeat: repeat-x;
+    border-left: 1px solid #769DC0;
+    border-top: 1px solid #769DC0;
+    border-bottom: 1px solid #769DC0;
+    border-right: 2px solid gray;
+    padding: 2px 2px 4px 2px;
+    width: 50px;
+    text-align: center;
+    background: #55FF55;
+  }
+
+  span.labelSpan {
+    font-weight: bold;
+  }
+  
+  input#SMTP_DOMAIN {
+    border: 0;
+    border-radius: 0;
+    margin-left: 0px;
+    border-top-right-radius:4px;
+    border-bottom-right-radius:4px;
+    background-color: #E4F2FF;
+    background-position: center top;
+    background-repeat: repeat-x;
+    border-right: 1px solid #769DC0;
+    border-top: 1px solid #769DC0;
+    border-bottom: 1px solid #769DC0;
+    padding: 2px 2px 4px 2px;
+    width: 346px;
+  }
+
+  input.top {
+    border: 0;
+    border-radius: 0;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-top: 1px solid #769DC0;
+    border-left: 1px solid #769DC0;
+    border-right: 1px solid #769DC0;
+    border-bottom: 1px solid gray;
+    background-color: #E4F2FF;
+  }
+  
+  input.middle {
+    border: 0;
+    border-radius: 0;
+    border-left: 1px solid #769DC0;
+    border-right: 1px solid #769DC0;
+    border-bottom: 1px solid gray;
+    background-color: #E4F2FF;
+  }
+  
+  input.bottom {
+    border: 0;
+    border-radius: 0;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    border-bottom: 1px solid #769DC0;
+    border-left: 1px solid #769DC0;
+    border-right: 1px solid #769DC0;
+    background-color: #E4F2FF;
+  }
+
+script.
+  var servicePrefs = '#{SERVICE_PREFERENCES}';
+  var loaded = false;
+  var connType = '#{RSYSLOG_CONNTYPE}';
+  var recipientNum = 1;
+  var myvm;
+  
+  function handleConnTypeChange()
+  {
+    if($('#RSYSLOG_CONNTYPE').val() == 'TCP' && $('#RSYSLOG_PORT').val() == '514')
+    {
+      $('#secondSlide').slideDown(400);
+    }
+    else
+    {
+      $('#secondSlide').slideUp(400);
+    }
+  }
+  
+  function handleRsysPortChange()
+  {
+    if($('#RSYSLOG_PORT').val() == '514')
+    {
+      $('#secondSlide').slideDown(400);
+    }
+    else
+    {
+      $('#secondSlide').slideUp(400);
+    }
+  }
+  
+  function changeDisabled()
+  {
+    if($('#default').is(':checked'))
+    {
+      for(var i = 0; i < $('#length').val(); i++)
+      {
+        $('#if' + i)[0].checked = true;
+        $('#if' + i)[0].disabled = true;
+        $('#DEFAULT')[0].value = 'true';
+      }      
+    }
+    else
+    {
+      for(var i = 0; i < $('#length').val(); i++)
+      {
+        $('#if' + i)[0].disabled = false;
+        $('#DEFAULT')[0].value = 'false';
+      }
+    }
+    checkAtLeastOne();
+  }
+  
+  function checkAtLeastOne()
+  {
+    var numNotChecked = 0;
+    var c = [];
+    
+    for(var i = 0; i < $('#length').val(); i++)
+    {
+      if(!$('#if' + i).is(':checked'))
+      {
+        numNotChecked++;
+      }
+      else
+      {
+        c.push($('#if' + i).val());
+      }
+    }
+    console.log(c); 
+    if(numNotChecked == $('#length').val())
+    {
+      $('#if0')[0].checked = true;
+      c.push($('#if0').val());
+    }
+    $('#IF_AGGREGATE').val(c.toString());
+  }
+  
+  function checkOnlyOne(which)
+  {
+    var numNotChecked = 0;
+    
+    for(var i = 0; i < $('#doppel_length').val(); i++)
+    {
+      if(!$('#dif' + i).is(':checked'))
+      {
+        numNotChecked++;
+      }
+      else if($('#dif' + i).is(':checked') && ('dif' + i) !== which)
+      {
+        $('#dif' + i)[0].checked = false;
+      }
+    }
+    
+    if(numNotChecked == $('#doppel_length').val())
+    {
+      $('#dif0')[0].checked = true;
+    }
+  }
+
+  function setServicePreferences()
+  {
+    $('#sp')[0].value = servicePrefs;
+  }
+  
+  function handleRsyslogPane()
+  {
+    if($('#RSYSLOG_USE').is(':checked'))
+    {
+      $('#rsyslogPane').slideDown(400);
+    }
+    else
+    {
+      $('#rsyslogPane').slideUp(400);
+    }
+  }
+  
+  function handleSMTPPaneSlide()
+  {
+    if($('#EMAIL_ALERTS_ENABLED').is(':checked'))
+    {
+      $('#smtpPane').slideDown(400);
+      $('#smtpTest').fadeIn(400);
+      $('#hiddenEmailEnabled').val('1');
+    }
+    else
+    {
+      $('#smtpPane').slideUp(400);
+      $('#smtpTest').fadeOut(400);
+      $('#hiddenEmailEnabled').val('0');
+    }
+  }
+  
+  function handleDoppelPaneSlide()
+  {
+    if($('#DM_ENABLED').is(':checked'))
+    {
+      $('#doppelPane').slideDown(400);
+    }
+    else
+    {
+      $('#doppelPane').slideUp(400);
+    }
+  }
+  
+  function fillServicePrefDiv()
+  {
+    var arr = [];
+    arr = servicePrefs.split(':');
+    
+    var recipientNum = 1;
+    
+    var syslogLevel = arr[1][0];
+    var emailLevel = arr[2][0];
+    var sysMod = ((arr[1][1] == '-' || arr[1][1] == '+') ? arr[1][1] : '');
+    var emailMod = ((arr[2][1] == '-' || arr[2][1] == '+') ? arr[2][1] : '');
+    
+    var syslogSection = document.createElement('div');
+    syslogSection.id = 'syslogDiv';
+    
+    var syslogLabel = document.createElement('label');
+    syslogLabel.value = 'Syslog';
+    syslogLabel.innerHTML = 'Syslog at';
+    
+    var syslogLevelSelect = document.createElement('select');
+    syslogLevelSelect.id = 'syslogLevelSelect';
+    syslogLevelSelect.setAttribute('onchange', 'onValueChange()');
+    
+    var syslogModSelect = document.createElement('select');
+    syslogModSelect.id = 'syslogModSelect';
+    syslogModSelect.setAttribute('onchange', 'onValueChange()');
+    
+    var options = ['EMERGENCY', 'ALERT', 'CRITICAL', 'ERROR', 'WARNING', 'NOTICE', 'INFO', 'DEBUG'];
+    var mods = ['', '+', '-'];
+    
+    for(var i = 0; i < options.length; i++)
+    {
+      var option = document.createElement('option');
+      option.value = (options.length - i - 1);
+      option.id = options[i];
+      option.innerHTML = options[i];
+      
+      if((options.length - i - 1) == syslogLevel)
+      {
+        option.selected = true;
+      }
+      
+      syslogLevelSelect.appendChild(option);
+    }
+    
+    for(var i = 0; i < mods.length; i++)
+    {
+      var option = document.createElement('option');
+      option.value = mods[i];
+      option.id = mods[i];
+      
+      switch(mods[i])
+      {
+        case '': option.innerHTML = 'only';
+                 option.id = 'NA';
+                 break;
+        case '+': option.innerHTML = 'or higher';
+                  break;
+        case '-': option.innerHTML = 'or lower';
+                  break;
+      }
+      
+      if(mods[i] == sysMod)
+      {
+        option.selected = true;
+      }
+      
+      syslogModSelect.appendChild(option);
+    }
+    
+    syslogSection.appendChild(syslogLabel);
+    syslogSection.appendChild(syslogLevelSelect);
+    syslogSection.appendChild(syslogModSelect);
+    
+    for(var i = 0; i < options.length; i++)
+    {
+      var option = document.createElement('option');
+      option.value = (options.length - i - 1);
+      option.id = options[i];
+      option.innerHTML = options[i];
+      
+    }
+    
+    for(var i = 0; i < mods.length; i++)
+    {
+      var option = document.createElement('option');
+      option.value = mods[i];
+      option.id = mods[i];
+      
+      switch(mods[i])
+      {
+        case '': option.innerHTML = 'only';
+                 option.id = 'NA';
+                 break;
+        case '+': option.innerHTML = 'or higher';
+                  break;
+        case '-': option.innerHTML = 'or lower';
+                  break;
+      }
+      
+    }
+    
+    var emailSection = document.createElement('div');
+    emailSection.id = 'emailDiv';
+    
+    var emailLabel = document.createElement('label');
+    emailLabel.value = 'email';
+    emailLabel.innerHTML = 'Email alerts at';
+    
+    var emailLevelSelect = document.createElement('select');
+    emailLevelSelect.id = 'emailLevelSelect';
+    emailLevelSelect.setAttribute('onchange', 'onValueChange()');
+    
+    var emailModSelect = document.createElement('select');
+    emailModSelect.id = 'emailModSelect';
+    emailModSelect.setAttribute('onchange', 'onValueChange()');
+    
+    for(var i = 0; i < options.length; i++)
+    {
+      var option = document.createElement('option');
+      option.value = (options.length - i - 1);
+      option.id = options[i];
+      option.innerHTML = options[i];
+      
+      if((options.length - i - 1) == emailLevel)
+      {
+        option.selected = true;
+      }
+      
+     emailLevelSelect.appendChild(option);
+    }
+    
+    for(var i = 0; i < mods.length; i++)
+    {
+      var option = document.createElement('option');
+      option.value = mods[i];
+      option.id = mods[i];
+      
+      switch(mods[i])
+      {
+        case '': option.innerHTML = 'only';
+                 option.id = 'NA';
+                 break;
+        case '+': option.innerHTML = 'or higher';
+                  break;
+        case '-': option.innerHTML = 'or lower';
+                  break;
+      }
+      
+      if(mods[i] == emailMod)
+      {
+        option.selected = true;
+      }
+      
+      emailModSelect.appendChild(option);
+    }
+    
+    emailSection.appendChild(emailLabel);
+    emailSection.appendChild(emailLevelSelect);
+    emailSection.appendChild(emailModSelect);
+    
+    $('#servicePrefs').append(syslogSection);
+    $('#servicePrefs').append(emailSection);
+  }
+  
+  function onValueChange()
+  {
+    var newServicePrefString = '0:';
+    
+    newServicePrefString += $("#syslogLevelSelect").val();
+
+    var checkSysMod = $("#syslogModSelect").val();
+    newServicePrefString += (checkSysMod != 'NA' ? checkSysMod : '');
+    newServicePrefString += ';1:';
+    
+    newServicePrefString += $("#emailLevelSelect").val();
+    
+    var checkEmailMod = $("#emailModSelect").val();
+    newServicePrefString += (checkEmailMod != 'NA' ? checkEmailMod : '');
+    newServicePrefString += ';';
+
+    servicePrefs = newServicePrefString;
+    setServicePreferences();
+  }
+  
+  function changeSMTPAuth()
+  {
+    if($('#SMTP_USEAUTH').is(':checked'))
+    {
+      $('#SMTP_USEAUTH')[0].value = '1';
+      $('#protoheader').html('smtps://');
+    }
+    else
+    {
+      $('#SMTP_USEAUTH')[0].value = '0';
+      $('#protoheader').html('smtp://');
+    }
+  }
+  
+  function testSMTPSettings()
+  {
+    console.log($('#EMAIL_ALERTS_ENABLED').is(':checked'));
+    if($('#EMAIL_ALERTS_ENABLED').is(':checked'))
+    {
+        var settings = {};
+        settings.SERVER = $('#SMTP_DOMAIN').val();
+        settings.PORT = $('#SMTP_PORT').val();
+        settings.FROM = $('#SMTP_ADDR').val();
+        settings.PASS = $('#SMTP_PASS').val();
+        settings.AUTH = $('#SMTP_USEAUTH')[0].value;
+        settings.TO = $("#recipAgg").val();
+        now.testSMTPSettings(settings, function(out){
+            var p = out;
+            if(out == "")
+            {
+                p = "SMTP test indicates no overt failures, please check recipient email inboxes";
+            }
+            alert(p);
+        });
+    }
+  }
+  
+  function setIntervalStart()
+  {
+    $('#SMTP_INTERVAL').val('#{SMTP_INTERVAL}');
+  }
+  
+  function setHiddenInterval()
+  {
+    $('#hiddenInterval').val($('#SMTP_INTERVAL').val());
+  }
+  
+  function init()
+  {
+
+    var vm = function() {
+        this.recipList = ko.observableArray();
+        
+        var oldRecips = "!{RECIPIENTS}";
+        oldRecips = oldRecips.split(",");
+        if (oldRecips.length == 0) {
+            this.recipList.push({address: ko.observable("first@example.com")});
+        } else {
+            for (var i = 0; i < oldRecips.length; i++) {
+                this.recipList.push({address: ko.observable(oldRecips[i])});
+            }
+        }
+        this.recipList.push({address: ko.observable("")});
+    };
+
+    // Triggered everytime an email address input box is changed
+    var recipValueChanged = function(newValue) {
+        // Delete any empty boxes
+        for (var i = 0; i < myvm.recipList().length - 1; i++) {
+            if (myvm.recipList()[i].address() == "") {
+                // Delete empty input boxes that aren't the last value
+                myvm.recipList.splice(i, 1);
+            }
+        }
+
+        // Add an empty input box if the last one isn't empty already
+        if (myvm.recipList()[myvm.recipList().length - 1].address() != "") {
+            var newInput = {address: ko.observable("")};
+            newInput.address.subscribe(recipValueChanged);
+            myvm.recipList.push(newInput);
+            $("#recipTable td input:last").focus();
+        }
+
+        // Populate the hidden field with our current state
+        var emailRecips = myvm.recipList()[0].address();
+        for (var i = 1; i < myvm.recipList().length - 1; i++) {
+            emailRecips += "," + myvm.recipList()[i].address();
+        }
+        $("#recipAgg").val(emailRecips);
+    }
+
+    myvm = new vm();
+    for (var i = 0; i < myvm.recipList().length; i++) {
+        myvm.recipList()[i].address.subscribe(recipValueChanged);
+    };
+
+    ko.applyBindings(myvm);
+
+    
+
+    now.ready(function()
+    {
+      if(loaded)
+      {
+        return;
+      }
+      else
+      {
+        loaded = true;
+      }
+      
+      if($('#sp')[0] !== undefined)
+      {
+        setServicePreferences();
+        fillServicePrefDiv();
+        changeSMTPAuth();
+      }
+
+      if(connType == 'UDP')
+      {
+        $('#RSYSLOG_CONNTYPE').val('UDP');
+      }
+      else
+      {
+        $('#RSYSLOG_CONNTYPE').val('TCP');
+      }
+
+      setIntervalStart();
+      
+      handleRsyslogPane();
+      handleSMTPPaneSlide();
+      handleDoppelPaneSlide();
+      changeDisabled();
+    });
+  }
+
+input(type='hidden', name='ADVANCED', value='0')
+
+h2 Email Notifications
+input(type='hidden', id='hiddenEmailEnabled', name='EMAIL_ALERTS_ENABLED', value="0")
+if(EMAIL_ALERTS_ENABLED == 1)
+  input(type='checkbox', id='EMAIL_ALERTS_ENABLED', value="1", checked=true, onclick='handleSMTPPaneSlide()')
+else
+  input(type='checkbox', id='EMAIL_ALERTS_ENABLED', value="0", onclick='handleSMTPPaneSlide()')
+span.labelSpan Enable email alerts?
+button#smtpTest(type='button', onclick='testSMTPSettings()') Test SMTP Settings
+br
+div#smtpPane
+  input(type='hidden', name='SMTP_USEAUTH', value='0')
+  if(SMTP_USEAUTH == 'true')
+    input(type='checkbox', id='SMTP_USEAUTH', name='SMTP_USEAUTH', value=SMTP_USEAUTH, onclick='changeSMTPAuth()', checked=true)
+  else
+    input(type='checkbox', id='SMTP_USEAUTH', name='SMTP_USEAUTH', value=SMTP_USEAUTH, onclick='changeSMTPAuth()')
+  span.labelSpan Use SMTP STARTTLS command if available?
+  br
+  br
+  
+  label SMTP Domain
+  br
+  div(style='margin-left: 0px;')
+    if(SMTP_USEAUTH == 'true')
+      label(id='protoheader') smtps://
+    else
+      label(id='protoheader') smtp://
+    input(name='SMTP_DOMAIN', id='SMTP_DOMAIN', value=SMTP_DOMAIN)
+  
+  label SMTP Address
+  br
+  input.wide(id='SMTP_ADDR', name='SMTP_ADDR', value=SMTP_ADDR)
+  br
+  
+  label SMTP Port
+  br
+  input.wide(type='number', min='0', max='65536', name='SMTP_PORT', id='SMTP_PORT', value=SMTP_PORT)
+  br
+  
+  label SMTP Password
+  br
+  input.wide(type='password', name='SMTP_PASS', id='SMTP_PASS', value=SMTP_PASS)
+  br
+  
+  label Send Email Alerts
+  br
+  select(id='SMTP_INTERVAL', onchange='setHiddenInterval()')
+    option hourly
+    option daily
+    option weekly
+    option monthly
+  br
+  
+  input(type='hidden', id='hiddenInterval', name='SMTP_INTERVAL', value=SMTP_INTERVAL)
+  
+  label Email Recipients
+  div(id='recipAnchor', style='margin: 0;')
+  br
+  table#recipTable
+    tbody(data-bind="foreach: recipList")
+      tr
+        td
+          input(data-bind="value: address")
+  br
+  
+  input(type='hidden', name='RECIPIENTS', id='recipAgg', value=RECIPIENTS)
+
+h2 Logger Settings
+div(id='servicePrefs')
+  input(id='sp', name='SERVICE_PREFERENCES', value='', readonly=true, type='hidden')
+br
+
+h2 Rsyslog
+input(type='hidden', name='RSYSLOG_USE', value="0")
+if(RSYSLOG_USE == 'true')
+  input#RSYSLOG_USE(type='checkbox', name='RSYSLOG_USE', value="1", checked=true, onclick='handleRsyslogPane()')
+else
+  input#RSYSLOG_USE(type='checkbox', name='RSYSLOG_USE', value="1", onclick='handleRsyslogPane()')
+span.labelSpan Use RSyslog?
+
+div#rsyslogPane
+  label Remote Log Server IP Address
+  br
+  input#RSYSLOG_IP(name='RSYSLOG_IP', value=RSYSLOG_IP)
+  br
+  label Remote Log Server Port
+  br
+  input#RSYSLOG_PORT(name='RSYSLOG_PORT', type='number', min='1', max='65536', step='1', value=RSYSLOG_PORT, onchange='handleRsysPortChange()')
+  br
+  label UDP or TCP?
+  br
+  select#RSYSLOG_CONNTYPE(name='RSYSLOG_CONNTYPE', onchange='handleConnTypeChange()')
+    option UDP
+    option TCP
+  div#secondSlide
+    p Note: It is not recommended for Remote Log Server Port to have the value 514 for TCP!
+    
+h2 Ethernet Interfaces
+- if (DEFAULT == 'true')
+  div
+    input(type='checkbox', value='default', id='default', onclick='changeDisabled()', checked, width=10)
+    span Listen on all available interfaces
+  - for (var i = 0; i < INTERFACES.length; i++)
+    - if(INTERFACES[i].checked == 1)
+      div
+        input(type='checkbox', value=INTERFACES[i].iface, id='if#{i}', name='INTERFACE', width=10, disabled=true, onclick='checkAtLeastOne()', checked)
+        span #{INTERFACE_ALIASES[i]}
+    - else
+      div
+        input(type='checkbox', value=INTERFACES[i].iface, id='if#{i}', name='INTERFACE', width=10, onclick='checkAtLeastOne()', disabled=true)
+        span #{INTERFACE_ALIASES[i]}
+- else
+  div
+    input(type='checkbox', value='default', id='default', onclick='changeDisabled()', width=10)
+    span Listen on all available interfaces
+  - for (var i = 0; i < INTERFACES.length; i++)
+    - if(INTERFACES[i].checked == 1)
+      div
+        input(type='checkbox', value=INTERFACES[i].iface, id='if#{i}', name='INTERFACE', width=10, onclick='checkAtLeastOne()', checked)
+        span #{INTERFACE_ALIASES[i]}
+    - else
+      div
+        input(type='checkbox', value=INTERFACES[i].iface, id='if#{i}', name='INTERFACE', width=10, onclick='checkAtLeastOne()')
+        span #{INTERFACE_ALIASES[i]}
+        
+input(type='hidden', id='length', value=INTERFACES.length) 
+input(type='hidden', name='DEFAULT', id='DEFAULT', value=DEFAULT)
+input(type='hidden', name='INTERFACES', id='IF_AGGREGATE')
+
+br
+input(type='hidden', name='DM_ENABLED', value='0')
+if(DM_ENABLED == 1)
+  input(type='checkbox', id='DM_ENABLED', name='DM_ENABLED', value="1", checked, onclick='handleDoppelPaneSlide()')
+else
+  input(type='checkbox', id='DM_ENABLED', name='DM_ENABLED', value="1", onclick='handleDoppelPaneSlide()')
+span.labelSpan Enable Doppelganger?
+br
+
+div#doppelPane
+  Label Doppelganger Interface
+  br
+  - for (var i = 0; i < DOPPELGANGER_INTERFACE.length; i++)
+    - if(DOPPELGANGER_INTERFACE[i].checked == 1)
+      div    
+        input(type='checkbox', value=DOPPELGANGER_INTERFACE[i].iface, id='dif#{i}', name='DOPPELGANGER_INTERFACE', width=10, onclick='checkOnlyOne("dif#{i}")', checked) 
+        span #{DOPPELGANGER_INTERFACE[i].iface}
+    - else
+      div 
+        input(type='checkbox', value=DOPPELGANGER_INTERFACE[i].iface, id='dif#{i}', name='DOPPELGANGER_INTERFACE', width=10, onclick='checkOnlyOne("dif#{i}")') 
+        span #{DOPPELGANGER_INTERFACE[i].iface}
+            
+  hidden(id='doppel_length', value=DOPPELGANGER_INTERFACE.length)
+br
+

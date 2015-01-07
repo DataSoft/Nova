@@ -1,0 +1,8 @@
+compress
+daily
+
+/var/log/nova/Nova.log /var/log/nova/Honeyd.log {
+	rotate 5
+	size=250M
+    create
+}

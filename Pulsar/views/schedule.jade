@@ -1,0 +1,71 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-   Nova is free software: you can redistribute it and/or modify
+//-    it under the terms of the GNU General Public License as published by
+//-    the Free Software Foundation, either version 3 of the License, or
+//-    (at your option) any later version.
+//- 
+//-    Nova is distributed in the hope that it will be useful,
+//-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-    GNU General Public License for more details.
+//- 
+//-    You should have received a copy of the GNU General Public License
+//-    along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+extends layout
+
+block content
+  div#opaque
+    label Click a client or group to start
+    br
+    br
+    table
+      thead
+        tr
+          th Connected Clients
+          th Groups
+      tbody
+        tr
+          td
+            table(class='listContainer')
+              tbody(id='clientsList')
+          td
+            table(class='listContainer')
+              tbody(id='groupsList')
+    br
+    h1 Schedule Events
+    div(id='elementHook')
+    br
+    button(onclick='submitSchedule()') Submit Scheduling Changes
+          
+block headerAdditions
+  script(type='text/javascript', src='scripts/ConnectionManagement.js')
+  script(type='text/javascript', src='scripts/Schedule.js')
+  script
+    var clients = '#{CLIENTS}'.split(':');
+    var groups = !{GROUPS};
+    var messageTypes = '#{TYPES}'.split(',');
+    var message = {};
+    message.id = '';
+    
+    now.ready(function(){
+      now.GetClients(now.RenderConnectionsList);
+      now.SetUpNotificationsButton();
+      now.GetClients(function(list){
+        for(var i in list)
+        {
+          if(list[i] != '')
+          {
+            now.UpdateConnectionsList(list[i], 'updateStatus');  
+          } 
+        }
+      });
+      setUpClientsList('clientsList');
+      setUpGroupsList('groupsList');
+      setTimeout(function(){
+        setUpClientsList('clientsList');
+        setUpGroupsList('groupsList');
+      }, 3000);
+    });

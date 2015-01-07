@@ -1,0 +1,431 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+include mixins/headers.jade
+
+extends layout
+
+block headerAdditions
+  link(rel='stylesheet', type='text/css', href='configstyle.css', media='screen')
+  link(rel='stylesheet', type='text/css', href='novagrid.css', media='screen')
+
+  style.
+    label.nodeAdd {
+        text-align: right;
+        margin-right: 5px;
+        margin-top: 5px;
+    }
+
+  script.
+    var currentInterface;
+    var pfile;
+    var interfaces;
+    var interfaceAliases; 
+    
+    function createNodes()
+    {
+        $('#createNewNodes').attr('disabled', true);
+        $('#createNewNodes').attr('value', 'Please wait. Creating new nodes...');
+        var ipType = $('#ipType').val();
+        var ip1 = $('#ip1').val();
+        var ip2 = $('#ip2').val();
+        var ip3 = $('#ip3').val();
+        var ip4 = $('#ip4').val();
+        var portset = $('#portSetList').val();
+        var vendor = $('#vendorList').val();
+        var profile = $('#profile').val();
+        var count = $('#nodeCount').val();
+        var interface = currentInterface;
+
+        console.log('ipType == ' + ipType);
+
+        try
+        {
+          now.createHoneydNodes(ipType, ip1, ip2, ip3, ip4, profile, portset, vendor, interface, count, createNodesCallback);
+        }
+        catch(err)
+        {
+          alert('Action failed because unable to connect to server! Please try refreshing the page and trying again.');
+          console.log('err was: ' + err);
+          $('#createNewNodes').attr('disabled', false);
+        }
+    }
+    
+    function profileChanged()
+    {
+      // to get value of a select dropdown in jQuery, it's .val(), not .attr('value')
+      now.GetProfile($('#profile').val(), populateVendorList);
+    }
+    
+    function populateVendorList(profile)
+    {
+        pfile = profile;
+        $('#vendorList').html('');
+        for (var vendor in profile.ethernet)
+        {
+            var v = profile.ethernet[vendor].vendor;
+            var option = document.createElement('option');
+            option.innerHTML = v;
+            $('#vendorList').append(option);
+        }
+        
+        $('#portSetList').html('');
+        for (var portset in profile.portSets)
+        {
+            var v = profile.portSets[portset].setName;
+            var option = document.createElement('option');
+            option.innerHTML = v;
+            $('#portSetList').append(option);
+        }
+
+        portsetSelectionChanged();
+    }
+    
+    function generateDefaultRows(tcp, udp, icmp)
+    {
+      var tr0 = document.createElement('tr');
+      var td0 = document.createElement('td');
+      td0.innerHTML = 'default';
+      var td1 = document.createElement('td');
+      td1.innerHTML = 'tcp';
+      var td2 = document.createElement('td');
+      td2.innerHTML = tcp;
+      tr0.appendChild(td0);
+      tr0.appendChild(td1);
+      tr0.appendChild(td2);
+      $('#portsetHook').append(tr0);
+      
+      var tr1 = document.createElement('tr');
+      var td3 = document.createElement('td');
+      td3.innerHTML = 'default';
+      var td4 = document.createElement('td');
+      td4.innerHTML = 'udp';
+      var td5 = document.createElement('td');
+      td5.innerHTML = udp;
+      tr1.appendChild(td3);
+      tr1.appendChild(td4);
+      tr1.appendChild(td5);
+      $('#portsetHook').append(tr1);
+      
+      var tr2 = document.createElement('tr');
+      var td6 = document.createElement('td');
+      td6.innerHTML = 'default';
+      var td7 = document.createElement('td');
+      td7.innerHTML = 'icmp';
+      var td8 = document.createElement('td');
+      td8.innerHTML = icmp;
+      tr2.appendChild(td6);
+      tr2.appendChild(td7);
+      tr2.appendChild(td8);
+      $('#portsetHook').append(tr2);
+    }
+    
+    function generateExceptionRow(num, proto, behav)
+    {
+      var tr0 = document.createElement('tr');
+      var td0 = document.createElement('td');
+      td0.innerHTML = num;
+      var td1 = document.createElement('td');
+      td1.innerHTML = proto;
+      var td2 = document.createElement('td');
+      td2.innerHTML = behav;
+      tr0.appendChild(td0);
+      tr0.appendChild(td1);
+      tr0.appendChild(td2);
+      $('#portsetHook').append(tr0);
+    }
+    
+    function portsetSelectionChanged()
+    {
+      $('#portsetHook').empty()
+      var desired = $('#portSetList').val();
+      var lightboxProfile = $('#profile').val();
+      now.GetPortSets(lightboxProfile, function(portset){
+        for(var i in portset)
+        {
+          if(desired == portset[i].setName)
+          {
+            generateDefaultRows(portset[i].TCPBehavior, portset[i].UDPBehavior, portset[i].ICMPBehavior);
+            for(var port in portset[i].PortExceptions)
+            {
+              generateExceptionRow(portset[i].PortExceptions[port].portNum, portset[i].PortExceptions[port].protocol, portset[i].PortExceptions[port].behavior);
+            }
+          }
+        }
+      });
+    }
+
+    function createNodesCallback(err)
+    {
+        if(err)
+        {
+            alert('Unable to create nodes due to error: ' + err);
+            $('#createNewNodes').attr('value', 'Create New Nodes');
+            $('#createNewNodes').attr('disabled', false);
+        } 
+        else
+        {
+            now.IsHaystackUp(checkIfRestartNeeded); 
+        }
+    }
+
+    function checkIfRestartNeeded(haystackUp)
+    {
+      if(haystackUp)
+      {
+        var restartHaystack = confirm('You must restart the haystack for this to take effect. Restart it now?');
+        if(restartHaystack)
+        {
+          now.RestartHaystack(function() {
+            window.location = '/honeydConfigManage?tab=settingsNodes';
+          });
+        } else {
+          window.location = '/honeydConfigManage?tab=settingsNodes';
+        }
+      } else {
+        window.location = '/honeydConfigManage?tab=settingsNodes';
+
+      }
+    }
+    
+    function ipTypeChanged()
+    {
+      var ipEditEnabled;
+      if($('#ipType').val() == 'DHCP')
+      {
+        ipEditEnabled = true;
+      } 
+      else
+      {
+        ipEditEnabled = false;
+      }
+      $('#ip1').attr('disabled', ipEditEnabled);
+      $('#ip2').attr('disabled', ipEditEnabled);
+      $('#ip3').attr('disabled', ipEditEnabled);
+      $('#ip4').attr('disabled', ipEditEnabled);
+    }
+    
+
+    function checkOnlyOne(checkedBox)
+    {
+      var checkedBox = $('#' + checkedBox)[0];
+      var forLength = $('#length').val();
+      
+      var checkAgainst = checkedBox.getAttribute('id');
+      
+      var checkedInterface = checkedBox.value;
+      currentInterface = checkedBox.value;
+      try 
+      {
+          var ip = now.GetLocalIP(checkedInterface, UpdateIpField);
+      } 
+      catch(err)
+      {
+        alert('Action failed because unable to connect to server! Please try refreshing the page and trying again.');
+        console.log('err was: ' + err);
+      }   
+      
+      if(forLength == 1)
+      {
+        checkedBox.checked = true;
+        return;
+      }
+      
+      for(var i = 0; i < forLength; i++)
+      {
+        if(checkAgainst !== ('if' + i))
+        {
+          $('#if' + i).attr('checked', false);
+        }
+      }
+      
+      if(!checkedBox.checked)
+      {
+        checkedBox.checked = true; 
+      }
+    }
+
+    function UpdateIpField(ip)
+    {
+      if (ip != undefined)
+      {
+        var ipParts = ip.split('.');
+        $('#ip1').attr('value', ipParts[0]);
+        $('#ip2').attr('value', ipParts[1])
+        $('#ip3').attr('value', ipParts[2])
+        $('#ip4').attr('value', ipParts[3])
+      } 
+      else
+      {
+        $('#ip1').attr('value', 0);
+        $('#ip2').attr('value', 0);
+        $('#ip3').attr('value', 0);;
+        $('#ip4').attr('value', 0);;
+      }
+
+    }
+
+    function configurationRestored()
+    {
+        now.IsHaystackUp(checkIfRestartNeeded); 
+    }
+    
+    
+    
+    function Init()
+    {
+      interfaces = !{JSON.stringify(INTERFACES)};
+      interfaceAliases = !{JSON.stringify(interfaceAliases)}
+    }
+    
+    function repopulateSelect(src)
+    {
+      $('#profile').empty();
+      if(src.checked)
+      {
+        populateProfileSelectLeaf();
+      }
+      else
+      {
+        populateProfileSelectAll();
+      }
+    }
+    
+    function populateProfileSelectAll()
+    {
+      var prof = $('#profile');
+      try
+      {
+        now.GetProfileNames(function(names){
+          for(var i in names)
+          {
+            var option = document.createElement('option');
+            option.value = names[i];
+            option.innerHTML = names[i];
+            prof.append(option);
+          } 
+        });
+      }
+      catch(err)
+      {
+        alert('Action failed because unable to connect to server! Please try refreshing the page and trying again.');
+        console.log('err was: ' + err);
+      }
+    }
+    
+    function populateProfileSelectLeaf()
+    {
+      var prof = $('#profile');
+      try
+      {
+        now.GetLeafProfileNames(function(names){
+          for(var i in names)
+          {
+            var option = document.createElement('option');
+            option.value = names[i];
+            option.innerHTML = names[i];
+            prof.append(option);
+          }
+        });
+      }
+      catch(err)
+      {
+        alert('Action failed because unable to connect to server! Please try refreshing the page and trying again.');
+        console.log('err was: ' + err);
+      }
+    }
+
+    
+    window.onload = function()
+    {
+      document.onselectstart = function()
+      {
+        return false;
+      }
+    }
+
+    function init()
+    {
+      now.ready(function() {
+        Init();
+        checkOnlyOne('if0');
+        profileChanged();
+      });
+
+    }
+
+block content
+  +header("Create Honeyd Nodes")
+    label.nodeAdd Show Only Leaf Profiles?
+    input(type='checkbox', checked=true, onclick='repopulateSelect(this)')
+    br
+    br
+    label.nodeAdd Profile
+    select#profile(name='profile', onchange='profileChanged()')
+      each profile, i in profiles
+        option #{profile}
+    br
+    label.nodeAdd Portset
+    select#portSetList(name='profile', onchange='portsetSelectionChanged()')
+    br
+    br
+    div(style='margin-left: 300px; height: 200px; overflow-y: scroll; display: inline-block; margin-right: 20px; border: 1px solid black')
+      table(border='1')
+        thead
+          th(style='background-color: #d0e9fc;') Port Number
+          th(style='background-color: #d0e9fc;') Protocol
+          th(style='background-color: #d0e9fc;') Behavior
+        tbody#portsetHook
+    br
+    
+    label.nodeAdd Ethernet Vendor
+    select#vendorList(name'vendorList')
+    br
+
+    label.nodeAdd Number of nodes to create
+    input#nodeCount(type='number', name='nodeCount', min='1', value='1')
+    
+    br
+    label.nodeAdd Network Interface
+    table
+      thead
+        tr 
+      tbody
+        - for (var i = 0; i < INTERFACES.length; i++)
+            tr 
+              td
+                div
+                  input(type='radio', value=INTERFACES[i], id='if#{i}', name='interface', width=10, onclick='checkOnlyOne("if#{i}")')
+                  span #{interfaceAliases[i]}
+    hidden(id='length', value=INTERFACES.length)
+    br
+    label.nodeAdd IP Address Allocation Type
+    select#ipType(name='ipType', onChange='ipTypeChanged()')
+      option DHCP
+      option IP Range
+
+    br
+    label.nodeAdd Starting IP address
+    input.ip#ip1(type='number', name='ip1', min='0', max='255', value='0', disabled='disabled')
+    input.ip#ip2(type='number', name='ip2', min='0', max='255', value='0', disabled='disabled')
+    input.ip#ip3(type='number', name='ip3', min='0', max='255', value='0', disabled='disabled')
+    input.ip#ip4(type='number', name='ip4', min='0', max='255', value='0', disabled='disabled')
+    
+    br
+    br
+    button#createNewNodes(onclick='createNodes()')
+      img.buttonIcon(src='images/ok.png')
+      span Create New Nodes

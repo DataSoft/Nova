@@ -1,0 +1,17 @@
+
+def set_options(opt):
+  opt.tool_options("compiler_cxx")
+
+def configure(conf):
+  conf.check_tool("compiler_cxx")
+  conf.check_tool("node_addon")
+
+def build(bld):
+  bld.env.append_value("LINKFLAGS", "-L../../NovaLibrary")
+  bld.env.append_value("LINKFLAGS", "-L../../Nova_UI_Core")
+  obj = bld.new_task_gen("cxx", "shlib", "node_addon")
+  obj.cxxflags = ["-g", "-D_FILE_OFFSET_BITS=64", "-D_LARGEFILE_SOURCE", "-Wall", "-W", "-std=c++0x", "-D_REENTRANT", "-pipe", "-pthread"]
+  obj.includes = [".", "../Nova_UI_Core/src", "../NovaLibrary/src", "/usr/include/cvv8/"]  
+  obj.libs = ["Nova_UI_Core","ann","NovaLibrary","curl","boost_filesystem", "boost_program_options", "protobuf", "z"]
+  obj.target = "novaconfig"
+  obj.source = "NovaNode.cpp NovaConfig.cpp NovaConfigBinding.cpp HoneydConfigBinding.cpp HoneydTypesJs.cpp VendorMacDbBinding.cpp OsPersonalityDbBinding.cpp HoneydProfileBinding.cpp CustomizeTraining.cpp WhitelistConfigurationBinding.cpp TrainingDumpBinding.cpp LoggerBinding.cpp"

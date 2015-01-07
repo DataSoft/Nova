@@ -1,0 +1,1115 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+style.
+  .ui-autocomplete {
+    max-height: 300px;
+    max-width: 1024px;
+    overflow-y: auto;
+    overflow-x: hidden;
+   }
+
+
+script.
+  var ports = {};
+  var lastPortSet = '';
+  var loadedName;
+  var profile;
+  var origProfile;
+  var portList = new function() {};
+  var newProfile = '#{newProfile}';
+  var portIndexes = [];
+
+  // Configuration details for the scripts
+  var scriptConfigurations = {};
+  var currentLightboxIndex = 0;
+
+  var loaded = false;
+
+  var currentName;
+  if(newProfile == 'true')
+  {
+    currentName = '#{parentName}';
+    loadedName = currentName;
+    //console.log('Creating child of profile ' + currentName);
+  } 
+  else
+  {
+    currentName = '#{oldName}';
+    loadedName = currentName;
+    //console.log('Editing profile ' + currentName);
+  }
+
+  var inheritanceChanged = function(){};
+  var scriptSelectionChanged = function(){};
+  var uptimeTypeChanged = function(){};
+  var deletePort = function(){};
+  var addPort = function(port){};
+  var portBehaviorChanged = function(){};
+  var configureScript = function(){};
+  var saveChanges = function(){};
+  var savedChanges = function(){};
+  var checkIfRestartNeeded = function(){};
+
+  var rmLb = false;
+
+  var bcastModel = function() {
+    var self = this;
+    self.broadcasts = ko.observableArray();
+    self.removeBroadcast =  function(bcast) {
+      self.broadcasts.remove(bcast);    
+    }
+
+    self.proxies = ko.observableArray();
+    self.removeProxy = function(proxy) {
+      self.proxies.remove(proxy);
+    }
+  };
+
+
+  function enforceMinAndMax(source)
+  {
+    var sourceNode = $('#' + source);
+    var val = parseInt(sourceNode.val());
+    var min = parseInt(sourceNode.attr('min'));
+    var max = parseInt(sourceNode.attr('max'));
+    if((min != undefined && val < min) || (max != undefined && val > max))
+    {
+      sourceNode.val(sourceNode.attr('min'));
+    }
+  }
+
+  function handleOnclick(e)
+  {
+    var evt = (e ? e : window.event);
+    var source = evt.target || evt.srcElement;
+    var loc = document.location.href;
+    if(loc.indexOf('/suspects') != -1)
+    {
+      removeContextMenu(); 
+    }
+    if(rmLb && checkIfLightboxChild(source) == 'false' && (loc.indexOf('/autoConfig') == -1))
+    {
+      closeLightbox();
+    }
+    else if($('#lightbox').css('display') == 'block')
+    {
+      rmLb = true;
+    }
+  }
+  
+  function checkIfLightboxChild(source)
+  {
+    if(source.id != 'lightbox' && source.tagName != 'HTML')
+    {
+      return checkIfLightboxChild(source.parentNode);
+    }        
+    else if(source.id == 'lightbox')
+    {
+      return 'true';
+    }
+    else if(source.tagName == 'HTML')
+    {
+      return 'false';
+    }
+  }
+
+  var openLightbox = function(){
+      disableBackground($('#setup')[0]);
+      $('#setup').css('opacity', '0.5');
+      $('#lightbox').css('display', 'block');
+      rmLb = true;
+  }
+
+  var closeLightbox = function(){
+      enableBackground($('#setup')[0]);
+      var table = $('#configureScriptTable');
+      var tableChildren = table.find("*");
+      scriptConfigurations[currentLightboxIndex] = {};
+      for(var i = 0; i < tableChildren.length; i++)
+      {
+        if(tableChildren[i].tagName == 'TR' && tableChildren[i].className != 'description')
+        {
+          scriptConfigurations[currentLightboxIndex][tableChildren[i].children[0].innerHTML] = tableChildren[i].children[1].children[0].value;
+        }
+      }
+
+      $('#lightbox').css('display', 'none');
+      $('#setup').css('opacity', '1');
+      checkInheritedDisable();
+      rmLb = false;
+  }
+  
+  function disableBackground(source)
+  {
+    var disableUs = source.childNodes;
+    for(var i in disableUs)
+    {
+      if(typeof disableUs[i] == 'object' && disableUs[i].tagName != undefined)
+      {
+        disableUs[i].disabled = true;
+        if(disableUs[i].hasChildNodes())
+        {
+          disableBackground(disableUs[i]);
+        }
+      }
+    }
+  }
+
+  function enableBackground(source)
+  {
+    var enableUs = source.childNodes;
+    for(var i in enableUs)
+    {
+      if(typeof enableUs[i] == 'object' && enableUs[i].tagName != undefined)
+      {
+        enableUs[i].disabled = false;
+        if(enableUs[i].hasChildNodes())
+        {
+          enableBackground(enableUs[i]);
+        }
+      }
+    }
+  }
+  
+  function checkInheritedDisable()
+  {
+    var persIn = $('#inheritPersonality').attr('checked');
+    var pdIn = $('#inheritDropRate').attr('checked');
+    var uptimeIn = $('#inheritUptime').attr('checked');
+    if(persIn == true)
+    {
+      $('#personality').prop('disabled', true);
+    }
+    if(pdIn == true)
+    {
+      $('#dropRate').prop('disabled', true);
+    }
+    if(uptimeIn == true)
+    {
+      $('#uptimeType').prop('disabled', true);
+      $('#uptimeMin').prop('disabled', true);
+      $('#uptimeMax').prop('disabled', true);
+    }
+  }
+  
+  // Make the HTML view reflect the internal model
+  var refreshVendorsView = function(){
+    var vendorDiv = $('#ethernetVendors')[0];
+    $('#ethernetVendors').empty();
+
+    // Populate the table header
+    var headerRow = document.createElement('tr');
+    var headerName = document.createElement('th');
+    headerName.innerHTML = 'Ethernet Vendor';
+
+    headerRow.appendChild(headerName);
+    vendorDiv.appendChild(headerRow);
+
+    // Populate the table rows
+    for(var i in profile.ethernet)
+    {
+      var vendorRow = document.createElement('tr');
+
+      // Vendor name cell
+      var vendorNameCell = document.createElement('td');
+      var vendorName = document.createElement('input');
+      vendorNameCell.appendChild(vendorName);
+      
+      vendorName.id = 'vendorName' + i;
+      vendorName.value = profile.ethernet[i].vendor;
+      vendorName.setAttribute('readonly', true);
+
+      // Vendor delete button
+      var vendorDeleteCell = document.createElement('td');
+      var vendorDelete = document.createElement('button');
+      vendorDeleteCell.appendChild(vendorDelete);
+
+      vendorDelete.innerHTML = '<img class="buttonIcon" src="images/delete.png"/><span class="buttonSpan">Delete</span>';
+      vendorDelete.onclick = function(i){return function(){deleteEthernetVendor(i);}}(i)
+
+      vendorRow.appendChild(vendorNameCell);
+      vendorRow.appendChild(vendorDeleteCell);
+              
+      vendorDiv.appendChild(vendorRow);
+    }
+  };
+
+  var addEthernetVendor = function(vendorName, vendorCount){
+    // Check for duplicates
+    now.checkVendor(vendorName, function(retVal){
+      if(retVal)
+      {
+        for(var i in profile.ethernet)
+        {
+          if(profile.ethernet[i].vendor == vendorName)
+          {
+            alert('Vendor already exists. Can not have duplicates.');
+            return;
+          }
+        }
+        profile.ethernet.push({vendor: vendorName, count: vendorCount});
+        $('#ethernet').val('');
+        refreshVendorsView();
+      }
+      else
+      {
+        $('#ethernet').val('');
+        alert('Must select a vendor from the vendor list!');
+      }
+    });
+  };
+
+  var deleteEthernetVendor = function(vendorIndex){
+    profile.ethernet.splice(vendorIndex, 1); 
+    refreshVendorsView();
+  };
+
+  var updatePortsModel = function(){
+    var PortExceptions = new Array();
+    ports.size = portIndexes.length;
+    for(var i = 0; i < portIndexes.length; i++) 
+    {
+      var port = {};
+      port.portNum = $('#portNum' + portIndexes[i]).val();
+
+      port.scriptConfiguration = scriptConfigurations[portIndexes[i]];
+
+      switch(Number($('#portBehavior' + portIndexes[i]).val())) 
+      {
+        case 0: port.behavior = 'closed'; break; 
+        case 1: port.behavior = 'filtered'; break;
+        case 2: port.behavior = 'open'; break;
+        case 3: port.behavior = 'script'; break;
+        case 4: port.behavior = 'tarpit open'; break;
+        case 5: port.behavior = 'tarpit script'; break;
+      }
+
+      if(port.behavior == 'script' || port.behavior == 'tarpit script')
+      {
+        port.scriptName = $('#portScriptDrop' + portIndexes[i]).val();
+      }
+      else
+      {
+        port.scriptName = '';
+      }
+
+      port.protocol = $('#portType' + portIndexes[i]).val();
+
+      for(var j = 0; j < PortExceptions.length; j++)
+      {
+        if(PortExceptions[j].portNum == port.portNum && port.protocol == PortExceptions[j].protocol)
+        {
+          alert('Error: Port ' + port.portNum + ' is used more than once!');
+          return false;
+        }
+      }
+
+      if(port.portNum == 0)
+      {
+        alert('Port cannot have port number 0!');
+        return false;
+      }
+      PortExceptions.push(port);
+    }
+    for(var i in profile.portSets)
+    {
+      if(profile.portSets[i].setName == lastPortSet)
+      {
+        profile.portSets[i].PortExceptions = PortExceptions;
+        profile.portSets[i].TCPBehavior = $('#defaultTCPAction').val();
+        profile.portSets[i].UDPBehavior = $('#defaultUDPAction').val();
+        profile.portSets[i].ICMPBehavior = $('#defaultICMPAction').val();
+        break;
+      }
+    }
+    return true;
+  };
+
+  var updatePortSetLists = function(){
+    $('#portSetSelection').empty()
+    if(profile.portSets.length != 0)
+    {
+      $('#portSetDiv').css('display', 'block');
+      $('#portSetSelection').prop('disabled', false);
+      for(var i in profile.portSets)
+      {
+          var option = document.createElement('option');
+          option.value = i;
+          option.innerHTML = i;
+          $('#portSetSelection').append(option);
+      }
+    }
+    else
+    {
+      $('#portSetDiv').css('display', 'none');
+    }
+    // Going to keep this commented until given a good reason not
+    // to do so. Having it run twice doesn't seem to do anything
+    // important and sometimes it throws errors
+    //portSetSelectionChanged();
+  };
+
+  var deletePortset = function(){
+    if (profile.portSets.length <= 1)
+    {
+      alert("You must have at least one portset");
+      return;
+    }
+    var setName = $('#portSetSelection').val();
+    console.log("Deleting portset " + setName);
+    
+    profile.portSets.splice(setName, 1);
+  
+    updatePortSetLists();
+    lastPortSet = "";
+    portSetSelectionChanged();
+
+    if (newProfile != 'true') {
+      now.DeletePortSet(profile.name, setName, function(err) {
+        if (err)
+        {
+          console.log("ERROR deleting portset: " + err);
+        }
+      });
+    }
+  };
+
+  var addNewPortset = function addNewPortSet(){
+      if(!updatePortsModel()) {return};
+
+      var setName = 0;
+      if (profile.portSets.length > 0) {
+        setName = String(profile.portSets[profile.portSets.length - 1].setName + 1);
+      }
+
+      var portSet = {setName: setName
+        , ICMPBehavior: 'open'
+        , TCPBehavior: 'closed'
+        , UDPBehavior: 'closed'
+        , PortExceptions: []
+      }
+
+      // Push to the profile object
+      profile.portSets.push(portSet);
+    
+      if (newProfile != 'true') {
+          now.AddPortSet(profile.name, function(err) {
+              if (err) {
+                  console.log("ERROR deleting portset!");
+              }
+          });
+      }
+
+      // Add into the port set dropdown box
+      updatePortSetLists();
+      
+      $('#newPortSetName').val('');
+      
+      $('#portSetSelection').val(setName);
+      
+      if(!updatePortsModel()){console.log('returning'); return;};
+
+      // Set is as the current portset
+      portSetSelectionChanged();
+  };
+  // Currently edited port set has changed
+  var portSetSelectionChanged = function(){
+    if (profile.portSets.length == 0) {
+        return;
+    }
+    if(lastPortSet != '')
+    {
+      if(!updatePortsModel())
+      {
+        $('#portSetSelection')[0].value = lastPortSet;
+        return;
+      }
+    }
+
+    lastPortSet = $('#portSetSelection').val();
+
+    var newPortSet = $('#portSetSelection').val();
+
+    $('#portTableBody').empty();
+    scriptConfigurations = {};
+
+    portIndexes = [];
+    var i = newPortSet;
+    $('#defaultICMPAction').val(profile.portSets[i].ICMPBehavior);
+    $('#defaultTCPAction').val(profile.portSets[i].TCPBehavior);
+    $('#defaultUDPAction').val(profile.portSets[i].UDPBehavior);
+            
+    for(var port in profile.portSets[i].PortExceptions)
+    {
+      addPort(profile.portSets[i].PortExceptions[port]);
+    }
+  };
+
+
+  function selectItemByValue(elmnt, value)
+  {
+    for(var i=0; i < elmnt.options.length; i++)
+    {
+      if(elmnt.options[i].value == value)
+      {
+        elmnt.selectedIndex = i;
+      }
+    }
+  }
+  
+
+  function addProxy() {
+    var proxy = {
+      honeypotPort: $("#honeypotPort").val()
+      , proxyIP: $("#proxyIP").val()
+      , protocol: $("#proxyProtocol").val()
+      , proxyPort: $("#proxyPort").val()
+    };
+
+    // Check for duplicates
+    for (var i = 0; i < viewModel.proxies().length; i++) {
+        if (viewModel.proxies()[i].honeypotPort == proxy.honeypotPort && viewModel.proxies()[i].protocol == proxy.protocol) {
+            alert(proxy.protocol + " port " + proxy.honeypotPort + " is already in use by a proxy service");
+            return;
+        }
+    }
+
+    // Check for invalid ports
+    if (isNaN(Number(proxy.honeypotPort)) || Number(proxy.honeypotPort) < 1 || Number(proxy.honeypotPort) > 65535) {
+        alert("Honeypot Port must be a valid number between 1 and 65535");
+        return;
+    }
+    
+    if (isNaN(Number(proxy.proxyPort)) || Number(proxy.proxyPort) < 1 || Number(proxy.proxyPort) > 65535) {
+        alert("Proxy Port must be a valid number between 1 and 65535");
+        return;
+    }
+    
+    $("#honeypotPort").val("");
+    $("#proxyIP").val("");
+    $("#proxyProtocol").val("tcp");
+    $("#proxyPort").val("");
+
+    viewModel.proxies.push(proxy);
+  }
+
+  function addBroadcast() {
+    var bcast = {
+      script: $("#bcastscript").val()
+      , srcPort: $("#bcastsrcport").val()
+      , dstPort: $("#bcastdstport").val()
+      , time: $("#bcasttime").val()
+    };
+
+    $("#bcastsrcport").val("");
+    $("#bcastdstport").val("");
+    $("#bcasttime").val("");
+
+    viewModel.broadcasts.push(bcast);
+  };
+
+  var viewModel;
+  function init()
+  {
+      viewModel = new bcastModel();
+      ko.applyBindings(viewModel);
+
+      now.GetBroadcasts('#{oldName}', function(bcasts) {
+        for (var i = 0; i < bcasts.length; i++) {
+            viewModel.broadcasts.push(bcasts[i]);
+        }
+      });
+
+      now.GetProxies('#{oldName}', function(proxies) {
+        console.log(proxies);
+        for (var i = 0; i < proxies.length; i++) {
+            viewModel.proxies.push(proxies[i]);
+        }
+      });
+
+      personalities = [];
+      $("#personalitySelect option").each(function() {
+        personalities.push($(this).val());
+      });
+
+      $("#personality").autocomplete({
+        source: personalities
+        , delay: 0
+        , minLength: 0
+      });
+
+      $("#showAllPersonalities")[0].onclick = function() {
+        $("#personality").autocomplete( "search", "" );
+      };
+      
+      
+      ethernetVendors = [];
+      $("#ethernetSelect option").each(function() {
+        ethernetVendors.push($(this).val());
+      });
+      ethernetVendors.sort();
+
+      $("#ethernet").autocomplete({
+        source: ethernetVendors
+        , delay: 300
+        , minLength: 0
+        , autoFocus: true
+      });
+
+      $("#showAllVendors")[0].onclick = function() {
+        $("#ethernet").autocomplete( "search", "" );
+      };
+
+    
+
+      saveChanges = function(){
+        var ethVendorList = [];
+
+        profile.oldName = '#{oldName}';
+        profile.parentProfile = $('#parentName').val();
+        profile.name = $('#name').val();
+
+        profile.personality = $('#personality').val();
+        profile.dropRate = $('#dropRate').val();
+
+        var value = parseInt($('#uptimeMin').val());
+        if(isNaN(value) || value < 0)
+        {
+          alert('Uptime min must be a positive integer!');
+          return;
+        }
+
+        profile.uptimeMin = $('#uptimeMin').val();
+
+        if($('#uptimeType')[0].selectedIndex == 0)
+        {
+          var value = parseInt($('#uptimeMin').val());
+          if(isNaN(value) || value < 0)
+          {
+            alert('Uptime max must be a positive integer!');
+            return;
+          }
+          profile.uptimeMax = $('#uptimeMin').val();
+        }
+        else
+        {
+          var value = parseInt($('#uptimeMax').val());
+          if(isNaN(value) || value < 0)
+          {
+            alert('Uptime max must be a positive integer!');
+            return;
+          }
+          profile.uptimeMax = $('#uptimeMax').val();
+        }
+
+
+        profile.isPersonalityInherited = $('#inheritPersonality')[0].checked;
+        profile.isDropRateInherited = $('#inheritDropRate')[0].checked;
+        profile.isUptimeInherited = $('#inheritUptime')[0].checked;
+        if(!updatePortsModel()) {return};
+
+        profile.broadcasts = viewModel.broadcasts();
+        profile.proxies = viewModel.proxies();
+        
+        // Check for proxy services and regular services being on the same port
+        for (var portSet = 0; portSet < profile.portSets.length; portSet++) {
+            for (var port = 0; port < profile.portSets[portSet].PortExceptions.length; port++) {
+                for (var proxy = 0; proxy < profile.proxies.length; proxy++) {
+                    if (profile.portSets[portSet].PortExceptions[port].portNum == profile.proxies[proxy].honeypotPort) {
+                        alert("Proxy service and regular service are both using port " + profile.proxies[proxy].honeypotPort);
+                        return;
+                    }
+
+                }
+            }
+        }
+
+
+        //need conditional here for add vs. edit, false == edit, true == add
+        try 
+        {
+          now.SaveProfile(profile, newProfile == 'true', savedChanges);
+        } 
+        catch(err)
+        {
+          alert('Action failed because unable to connect to server! Please try refreshing the page and trying again.');
+          console.log('err was: ' + err);
+        }
+      };
+
+      savedChanges = function(err){
+        if(err == null)
+        {
+          window.location = '/honeydConfigManage?tab=settingsProfiles';
+          now.IsHaystackUp(checkIfRestartNeeded); 
+        }
+        else
+        {
+          alert('Unable to save profile: ' + err);
+          return;
+        }
+      };
+
+
+      checkIfRestartNeeded = function(haystackUp){
+        if(haystackUp)
+        {
+          var restartHaystack = confirm('You must restart the haystack for this to take effect. Restart it now?');
+          if(restartHaystack)
+          {
+            now.RestartHaystack(function() {
+              window.location='/honeydConfigManage?tab=settingsProfiles';
+            });
+          } else {
+            window.location='/honeydConfigManage?tab=settingsProfiles';
+          }
+        } else {
+          window.location='/honeydConfigManage?tab=settingsProfiles';
+        }
+      };
+
+      addPort = function(port){
+        if(port == undefined) 
+        {
+          port = {};
+          port.portNum = 1;
+          port.protocol = 'tcp';
+          port.behavior = 'open';
+          port.scriptName = 'NA';
+          port.scriptConfiguration = {};
+        }
+
+        var portDiv = $('#portTableBody')[0];
+        var portUID;
+
+        if(portIndexes.length > 0) 
+        {
+          portUID = portIndexes[portIndexes.length - 1] + 1;
+        }
+        else
+        {
+          portUID = 0;
+        }
+
+        portIndexes.push(portUID);
+        scriptConfigurations[portUID] = port.scriptConfiguration;
+
+        var row = document.createElement('tr');
+        row.id = 'portRow' + portUID;
+
+        var behaviorContainer = document.createElement('td');
+        var behaviorSelect = document.createElement('select');
+        behaviorSelect.id = 'portBehavior' + portUID;
+        behaviorSelect.onchange = portBehaviorChanged;
+        
+        options = ['closed', 'filtered', 'open', 'script', 'tarpit open', 'tarpit script'];
+        longOptions = ['Closed: Respond with TCP RST or ICMP Port Error', 'Filter: Drop packets and do not respond', 'Open: Establish incoming connections', 'Script: Emulate a service', 'Open with tarpit', 'Script with tarpit'];
+        
+        for(j = 0; j < options.length; j++) 
+        {
+          if(port.behavior == options[j]) 
+          {
+            var option = document.createElement('option');
+            option.value = j;
+            option.selected = true;
+            option.innerHTML = longOptions[j];
+            behaviorSelect.appendChild(option);
+          } 
+          else 
+          {
+            var option = document.createElement('option');
+            option.value = j;
+            option.innerHTML = longOptions[j];
+            behaviorSelect.appendChild(option);
+          }
+        }
+
+        behaviorContainer.appendChild(behaviorSelect);
+        row.appendChild(behaviorContainer);
+
+
+        var scriptContainer = document.createElement('td');
+        var scriptSelect = document.createElement('select');
+        scriptSelect.id = 'portScriptDrop' + portUID;
+        scriptSelect.setAttribute('onchange', 'scriptSelectionChanged(' + portUID + ')');
+
+        var scripts = '#{scripts}';
+        options = scripts.split(',');
+        matchingScriptFound = false;
+
+        for(j = 0; j < options.length; j++) 
+        {
+          if(port.scriptName == options[j]) 
+          {
+            var option = document.createElement('option');
+            option.selected = true;
+            option.innerHTML = options[j];
+            scriptSelect.appendChild(option);
+            matchingScriptFound = true;
+          } 
+          else 
+          {
+            var option = document.createElement('option');
+            option.innerHTML = options[j];
+            scriptSelect.appendChild(option);
+          }
+        }
+
+        // Have a blank option if no script is selected
+        if(!matchingScriptFound) 
+        {
+          var option = document.createElement('option');
+          option.disabled = true;
+          option.selected = true;
+          option.innerHTML = 'NA';
+          scriptSelect.appendChild(option);
+        } 
+        else 
+        {
+          var option = document.createElement('option');
+          option.disabled = true;
+          option.innerHTML = 'NA';
+          scriptSelect.appendChild(option);
+        }
+        
+        scriptContainer.appendChild(scriptSelect);
+        row.appendChild(scriptContainer);
+        
+        
+        var numContainer = document.createElement('td');
+        var numInput = document.createElement('input');
+        if(navigator.userAgent.indexOf('MSIE') == '-1')
+        {
+          numInput.type = 'number';
+        }
+        numInput.id = 'portNum' + portUID;
+        numInput.min = 1;
+        numInput.max = 65535;
+        numInput.value = port.portNum;
+        numInput.setAttribute('onblur', 'enforceMinAndMax("portNum' + portUID + '")');
+        numContainer.appendChild(numInput);
+        row.appendChild(numContainer);
+                
+        var typeContainer = document.createElement('td');
+        var typeSelect = document.createElement('select');
+        typeSelect.id = 'portType' + portUID;
+
+        options = ['udp', 'tcp'];
+        for(j = 0; j < options.length; j++)
+        {
+          var option = document.createElement('option');
+          option.value = options[j];
+          option.innerHTML = options[j];
+          if(port.protocol == options[j])
+          {
+            option.selected = true;
+          }
+          typeSelect.appendChild(option);
+        }
+
+        typeContainer.appendChild(typeSelect);
+        row.appendChild(typeContainer);
+
+        var configureContainer = document.createElement('td');
+        var configureButton = document.createElement('button');
+        configureButton.setAttribute('type', 'button');
+        configureButton.setAttribute('onclick', 'configureScript(' + portUID + ')');
+        configureButton.innerHTML = '<img class="buttonIcon" src="images/edit.png"/><span class="buttonSpan">Configure</span>';
+        configureButton.id = 'configureButton' + portUID;
+        configureContainer.appendChild(configureButton);
+        row.appendChild(configureContainer);
+
+        // Delete button 
+        var buttonContainer = document.createElement('td');
+        var deleteButton = document.createElement('button');
+        deleteButton.setAttribute('type', 'button');
+        deleteButton.setAttribute('onclick', 'deletePort(' + portUID + ')');
+        deleteButton.innerHTML = '<img class="buttonIcon" src="images/delete.png"/><span class="buttonSpan">Delete</span>';
+        buttonContainer.appendChild(deleteButton);
+        row.appendChild(buttonContainer);
+
+        portDiv.appendChild(row);
+
+        portBehaviorChanged();
+      };
+
+      uptimeTypeChanged = function(){
+        if($('#uptimeType')[0].selectedIndex == 0) 
+        {
+          $('#uptimeMax').css('display', 'none');
+          $('#uptimeLabel').html('Uptime');
+        } 
+        else 
+        {
+          $('#uptimeMax').css('display', 'block'); 
+          $('#uptimeLabel').html('Uptime Range');
+        }
+      };
+
+      configureScript = function(portIndex){
+        currentLightboxIndex = portIndex;
+        var scriptName = $('#portScriptDrop' + portIndex).val();
+        if(scriptName === 'NA')
+        {
+          return;
+        }
+
+        try 
+        {
+          now.GetScript(scriptName, function(script){
+            $('#configureScript').empty();
+            var table = $('<TABLE>').appendTo($('#configureScript'));
+            table.attr('id','configureScriptTable');
+            
+            var optionCount = 0;
+            for(var option in script.GetOptions)
+            {
+              var description = script.GetOptionDescriptions[option];
+              if (description && description != "") {
+                var descriptionTr = $('<TR>').appendTo(table);
+                var keyDescription = $('<TD>').appendTo(descriptionTr);
+                keyDescription.attr('colspan', 2);
+                descriptionTr.addClass("description");
+                
+                var descriptionText = $('<P>').appendTo(keyDescription);
+                descriptionText.css('font-weight', 'bold');
+                descriptionText.html(description);
+                    
+              }
+
+              var tr = $('<TR>').appendTo(table);
+              var keyData = $('<TD>').appendTo(tr);
+              var valueData = $('<TD>').appendTo(tr);
+              var valueSelect = $('<SELECT>').appendTo(valueData);
+
+              for(var i = 0; i < script.GetOptions[option].length; i++)
+              {
+                var selectOption = $('<OPTION>');
+                selectOption.text(script.GetOptions[option][i]);
+                selectOption.val(script.GetOptions[option][i]);
+                valueSelect.append(selectOption);
+
+                if(scriptConfigurations[portIndex][option] === script.GetOptions[option][i])
+                {
+                  selectOption.attr('selected', 'selected');
+                  console.log("selected!")
+                }
+              }
+
+              keyData.html(option);
+               
+              optionCount++;
+            }
+              
+            if(optionCount == 0)
+            {
+                alert('No configuration options for the selected script');
+                return;
+            }
+
+            openLightbox();
+          });
+        }
+        catch(err)
+        {
+          console.log('Error was: ' + err);
+        }
+      };
+
+      portBehaviorChanged = function(){
+        for(var i = 0; i < portIndexes.length; i++) 
+        {
+          if($('#portBehavior' + portIndexes[i]).val() == '3' || $('#portBehavior' + portIndexes[i]).val() == '5') 
+          {
+            $('#portScriptDrop' + portIndexes[i]).prop('disabled', false);
+            if($('#portScriptDrop' + portIndexes[i]).val() == 'NA')
+            {
+              $('#portScriptDrop' + portIndexes[i])[0].selectedIndex = 0;
+            }
+          } 
+          else 
+          {
+            $('#portScriptDrop' + portIndexes[i]).prop('disabled', true);
+            $('#portScriptDrop' + portIndexes[i])[0].selectedIndex = $('#portScriptDrop' + portIndexes[i]+  ' option').length - 1;
+          }
+          //scriptSelectionChanged(portIndexes[i]);
+        }
+      };
+
+      deletePort = function(portUID){
+        $('#portRow' + portUID).empty();
+        var idx = portIndexes.indexOf(portUID);
+        if(idx != -1) 
+        {
+          portIndexes.splice(idx, 1);
+        }
+      };
+
+      inheritanceChanged = function(){
+        if($('#inheritPersonality').is(':checked'))
+        {
+          $('#personality').prop('value', origProfile.personality);
+          $('#personality').prop('disabled', true);
+        } 
+        else
+        {
+          $('#personality').prop('disabled', false);
+        }
+
+        if($('#dropRate').prop('disabled', $('#inheritDropRate').is(':checked'))) 
+        {
+          $('#dropRate').val(origProfile.dropRate);
+        }
+
+        if($('#uptimeMin').prop('disabled', $('#inheritUptime').is(':checked'))) 
+        {
+          $('#uptimeMin').val(origProfile.uptimeMin);
+        }
+
+        if($('#uptimeMax').prop('disabled', $('#inheritUptime').is(':checked'))) 
+        {
+          $('#uptimeMax').val(origProfile.uptimeMax);
+        }
+
+        if($('#uptimeType').prop('disabled', $('#inheritUptime').is(':checked'))) 
+        {
+          if(origProfile.uptimeMin == origProfile.uptimeMax) 
+          {
+            $('#uptimeType')[0].selectedIndex = 0;
+          } 
+          else 
+          {
+            $('#uptimeType')[0].selectedIndex = 1; 
+          }
+        }
+
+        uptimeTypeChanged();
+      };
+
+      scriptSelectionChanged = function(portIndex){
+        // Clear the port configuration options
+        scriptConfigurations[portIndex] = {};
+
+        // Don't bother if the dropdown is disabled
+        if($('#portScriptDrop' + portIndex).prop('disabled'))
+        {
+          $('#configureButton' + portIndex).css('display', 'none');
+          return;
+        }
+
+        var scriptName = $('#portScriptDrop' + portIndex).val();
+
+        // Populate the defaults
+        now.GetScript(scriptName, function(script){
+          var optionCount = 0;
+          for(var option in script.GetOptions)
+          {
+            optionCount++;
+            scriptConfigurations[portIndex][option] = script.GetOptions[option][0];
+          }
+
+          $("#portNum" + portIndex).val(script.GetDefaultPort);
+          
+          if(optionCount === 0)
+          {
+            $('#configureButton' + portIndex).css('display', 'none');
+          }
+          else
+          {
+            $('#configureButton' + portIndex).css('display', 'block');
+          }
+        });
+      };
+
+      now.ready(function(){
+        if(loaded) 
+        {
+          return;
+        } 
+        else 
+        {
+          loaded = true;
+        }
+        
+        try 
+        {
+          now.GetProfile(currentName, function(pfile){
+            if(pfile == undefined)
+            {
+              alert('ERROR: Unable to fetch the requested profile information.');
+              window.location='/honeydConfigManage?tab=settingsProfiles';
+              return;
+            }
+
+            profile = pfile;
+            origProfile = pfile;
+
+            if(newProfile == 'true') 
+            {
+              $('#name').attr('value', 'New Profile');
+              $('#parentName').attr('value', '#{parentName}');
+              $('#inheritPersonality').attr('checked', true);
+              $('#inheritDropRate').attr('checked', true); 
+              $('#inheritUptime').attr('checked', true); 
+
+              // We don't want copies of the port sets (or do we?)
+              profile.portSets = [];
+            } 
+            else 
+            {
+              $('#name').attr('value', profile.name);
+              if(profile.name == 'default')
+              {
+                $('#row1').css('display', 'none');
+              }
+              else
+              {
+                $('#parentName').attr('value', profile.parentProfile);
+              }
+              $('#inheritPersonality').attr('checked', profile.isPersonalityInherited);
+              $('#inheritDropRate').attr('checked', profile.isDropRateInherited);
+              $('#inheritUptime').attr('checked', profile.isUptimeInherited);
+            }
+
+            $('#personality').val(profile.personality);
+            $('#uptimeMin').attr('value', profile.uptimeMin);
+            $('#uptimeMax').attr('value', profile.uptimeMax);
+
+            if(profile.uptimeMin != profile.uptimeMax)
+            {
+              $('#uptimeType')[0].selectedIndex = 1;
+              uptimeTypeChanged();
+            }
+
+            $('#dropRate').attr('value', profile.dropRate);
+
+            // Populate the port set options
+            updatePortSetLists();
+            
+            portSetSelectionChanged();
+
+            refreshVendorsView();
+            inheritanceChanged();
+          });
+        }
+        catch(err)
+        {
+          alert('Action failed because unable to connect to server! Please try refreshing the page and trying again.');
+          console.log('err was: ' + err);
+        }  
+      });
+  }

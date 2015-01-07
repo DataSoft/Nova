@@ -1,0 +1,52 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-   Nova is free software: you can redistribute it and/or modify
+//-    it under the terms of the GNU General Public License as published by
+//-    the Free Software Foundation, either version 3 of the License, or
+//-    (at your option) any later version.
+//- 
+//-    Nova is distributed in the hope that it will be useful,
+//-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-    GNU General Public License for more details.
+//- 
+//-    You should have received a copy of the GNU General Public License
+//-    along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+extends layout
+
+block headerAdditions
+  script
+    function populateNotifications(cbData)
+    {
+      var notifyLines = cbData.toString().split('\\n');
+      for(var i in notifyLines)
+      {
+        if(notifyLines[i] != '' && notifyLines[i] != undefined)
+        {
+          var p = document.createElement('p');
+          p.innerHTML = notifyLines[i];
+          document.getElementById('notificationsDiv').appendChild(p);
+        }
+      }
+    }
+  
+    now.ready(function(){
+      now.UpdateNotificationsButton('read');
+      now.GetNotifications(populateNotifications);
+      now.GetClients(now.RenderConnectionsList);
+      now.SetUpHostileEventsButton();
+      now.GetClients(function(list){
+        for(var i in list)
+        {
+          if(list[i] != '')
+          {
+            now.UpdateConnectionsList(list[i], 'updateStatus');  
+          } 
+        }
+      });
+    });
+
+block content
+  div(id='notificationsDiv', style='border: 2px solid black; background: #E8A02F;')

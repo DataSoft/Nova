@@ -1,0 +1,184 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+include mixins/headers.jade
+
+extends layout
+
+block content
+  +headerWithHelp("Hostile Events", "hostileEvents")
+    button.button(onClick="now.ClearHostileEvents(finishedClearing)")
+      img.buttonIcon(src="images/erase.png")
+      span.buttonSpan Clear All Events
+    br
+    br
+    input#showAdvanced(type="checkbox", onchange="showAdvancedChanged()")
+    label Show Advanced Suspect Statistics
+    br
+    
+    span#suspectTable(style="display: inline-block;")
+   
+block headerAdditions
+  link(rel="stylesheet", type="text/css", href="novagrid.css", media="screen")
+  script(type="text/javascript", src="scripts/NovaGrid.js")
+  script.
+    function finishedClearing(err)
+    {
+        if (!err)
+        {
+            window.location.reload();
+        } else {
+            alert("There was an error when clearing the event list: " + err);
+        }
+    }
+
+    function featureFormatter(d)
+    {
+        var num = new Number(d);
+        return (num.toFixed(2));
+    }
+
+    function classificationFormatter(d)
+    {
+        var num = 100 * d;
+        if(num > 0)
+        {
+            // Minor performance boost, don't bother with coloring those < than 5% hostile, barely shows anyway
+            if(num > 5)
+            {
+                return '<div style="background: rgba(255, 0, 0, ' + d.toFixed(2) + ');">' + num.toFixed(2) + "%</div>";
+            }
+            else
+            {
+                return num.toFixed(2) + "%";
+            }
+        }
+        else
+        {
+            if(num == -100)
+            {
+                return "Invalid";
+            }
+            else if(num == -200)
+            {
+                return "Not Enough Data";
+            }
+            else
+            {
+                return "Error";
+            }
+        }
+    }
+    
+    function showAdvancedChanged()
+    {
+        if($('#showAdvanced').is(':checked'))
+        {
+            for(var i = 4; i < suspectGrid.m_columns.length; i++)
+            {
+                suspectGrid.m_columns[i].isDisabled = false;
+            }
+        } 
+        else
+        {
+            for(var i = 4; i < suspectGrid.m_columns.length; i++)
+            {
+                suspectGrid.m_columns[i].isDisabled = true;
+            }
+        }
+
+        suspectGrid.GenerateTableHeader();
+        suspectGrid.Render();
+    }
+    
+    function Init()
+    {
+        var gridStructure = new Array();
+        gridStructure.push({name: "ID", isDisabled: false});
+        gridStructure.push({name: "Timestamp", isDisabled: false});
+        gridStructure.push({name: "Address", isDisabled: false});
+        gridStructure.push({name: "Interface", isDisabled: false});
+        gridStructure.push({name: "Classification", isDisabled: false});
+   
+        var susTable = $('#suspectTable');
+   
+        var featureNames = String("#{featureNames}").split(",");
+        for(var i = 0; i < featureNames.length; i++)
+        {
+            gridStructure.push({name:featureNames[i], formatter: featureFormatter, isDisabled: true});
+        }
+   
+        suspectGrid = new NovaGrid(gridStructure, 0, susTable[0], 'suspectGrid');
+
+        // Sort by classification by default
+        suspectGrid.SetSortByKey(1);
+        suspectGrid.Render();
+
+    
+        try
+        { 
+          now.GetHostileEvents(function (err, results)
+          {
+              if (err) {
+                alert("Server error: " + err);
+                return;
+              }
+
+              for(var i = 0; i < results.length; i++)
+              {
+                  var row = new Array();
+                  row.push(results[i].id);
+                  row.push((new Date(1000*results[i].lastTime)).toString());
+                  row.push(results[i].ip);
+                  row.push(results[i].interface);
+                  row.push(results[i].classification);
+                  
+                  row.push(results[i].ip_traffic_distribution);
+                  row.push(results[i].port_traffic_distribution);
+                  row.push(results[i].packet_size_mean);
+                  row.push(results[i].packet_size_deviation);
+                  row.push(results[i].distinct_ips);
+                  row.push(results[i].distinct_tcp_ports);
+                  row.push(results[i].distinct_udp_ports);
+                  row.push(results[i].avg_tcp_ports_per_host);
+                  row.push(results[i].avg_udp_ports_per_host);
+                  row.push(results[i].tcp_percent_syn);
+                  row.push(results[i].tcp_percent_fin);
+                  row.push(results[i].tcp_percent_rst);
+                  row.push(results[i].tcp_percent_synack);
+                  row.push(results[i].haystack_percent_contacted);
+
+                  suspectGrid.PushEntry(row);
+              }
+              suspectGrid.Render();
+          });
+        }
+        catch(err)
+        {
+          alert("Action failed because unable to connect to server! Please try refreshing the page and trying again.");
+          console.log("err was: " + err);
+        }   
+    }
+
+    function init()
+    {
+      now.ready(function()
+      {
+        Init();
+      });
+    };
+
+

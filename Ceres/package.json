@@ -1,0 +1,9 @@
+{
+	"name" : "nova"
+	, "version" : "0.1.0"
+	, "author"	: "Datasoft"
+	, "dependencies" : {
+		"js2xmlparser" : ""
+		, "sqlite3" : ""
+	}
+}

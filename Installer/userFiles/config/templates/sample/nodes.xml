@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nodes>
+	<node>
+		<interface>eth0</interface>
+		<IP>DHCP</IP>
+		<enabled>true</enabled>
+		<MAC>00:11:43:7d:de:9f</MAC>
+		<profile>
+			<name>BSDServer</name>
+			<portset>0</portset>
+		</profile>
+	</node>
+	<node>
+		<interface>eth0</interface>
+		<IP>DHCP</IP>
+		<enabled>true</enabled>
+		<MAC>00:18:8b:ba:77:fd</MAC>
+		<profile>
+			<name>WinServer</name>
+			<portset>0</portset>
+		</profile>
+	</node>
+	<node>
+		<interface>eth0</interface>
+		<IP>DHCP</IP>
+		<enabled>true</enabled>
+		<MAC>a4:ba:db:7d:27:5e</MAC>
+		<profile>
+			<name>LinuxServer</name>
+			<portset>0</portset>
+		</profile>
+	</node>
+</nodes>
+<doppelganger>
+	<node>
+		<interface>lo</interface>
+		<IP>10.0.0.1</IP>
+		<enabled>true</enabled>
+		<MAC>a4:ba:db:7d:27:5f</MAC>
+		<profile>
+			<name>LinuxServer</name>
+			<portset>0</portset>
+		</profile>
+	</node>
+</doppelganger>

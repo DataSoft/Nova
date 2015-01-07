@@ -1,0 +1,129 @@
+include mixins/headers.jade
+
+extends layout
+
+block headerAdditions
+  style.
+    :target { color: red ;} 
+
+block content
+
+  div(style="width: 50%")
+    h1.cardHeader.cardSeperator  Suspect Monitoring
+    br
+    +headerWithAnchor("Overview of captured network traffic", "suspectGrid")
+      p This grid displays details for all of the "suspects" on your network. A suspect is just an IP address that Nova has seen packets from. At a glance you can see the hostility rating, last packet timestamp, and some of the packet statistics for all of the suspects that have been seen so far. Clicking on a suspect will let you see detailed reports of the data gathered for a suspect, clear all of the data that has been seen for that suspect, or train the KNN classifier to treat suspects like that as hostile or benign.
+  
+    +headerWithAnchor("Packet Count Summaries", "packetCounts")
+      p This box shows the total number of packets seen by this suspect and breakdowns of packet counts for different types of packets.
+  
+    +headerWithAnchor("KNN Classification Features", "knnFeatures")
+      p The KNN classification algorithm takes in an n-dimensional point in space and attempts to find the nearest neighbors to that point. If the nearest neighbors are points that were recorded as hostile training points, then the suspect becomes more hostile. If they were classified as benign in the training phase, then the suspect becomes more benign. The values used to construct the point are called "features" in machine learning, and we list them here to help explain the result of the KNN Classification Engine.
+  
+    +headerWithAnchor("Suspect Grid Settings", "suspectGridSettings")
+      p Here you can toggle some of the settings for the suspect grid, such as disabling live updates so you can "freeze" the current state of the grid, show hidden advanced columns, or show suspects that are by default hidden because there hasn't been enough packets to form a classification.
+
+
+    +headerWithAnchor("TCP Packet Flag Statistics", "tcpFlags")
+      p The TCP flag breakdown shows what percentage of the packets had each of some common flag bits set. Suspects with a high percentage of packets containing the SYN flag could be attempting to do a port scan or SYN flood.
+
+    +headerWithAnchor("Packet Breakdowns by IP and port", "packetIPPortBreakdowns")
+      p These sections show the breakdown of packets split up by destination port and destination IP. You can see which honeypots were contacted the most, and which ports on those honeypots were targeted.
+
+    +headerWithAnchor("Live Feature Graphs", "liveFeatureGraphs")
+      p This section shows live graphs of the KNN Features. This can be useful for seeing if the features are currently staying the same or changing.
+
+    +headerWithAnchor("Classification Notes", "classificationNotes")
+      p This section displays notes from the classification engines; the exact output depends on what engines are enabled.
+      b KNN Classification Engine
+      p This engine will show the closest matching neighbors from the training file, both their raw and normalized points as well as their indexes.
+      b Script Alert Classification Engine
+      p This engine will show any attempted logins on the honeypot scripts here.
+      b Threshold based Classification Engine
+      p This engine will show what feature, if any, surpassed a set threshold to alert on.
+  
+    h1.cardHeader.cardSeperator  Logging, New Information, and Hostile Events
+    br
+    +headerWithAnchor("New Information", "newInformation")
+      p The new information page shows all of the Nova and Honeyd logs, but allows you to "mark entries as seen". If you mark log entries as seen, they will no longer show up on this page. This allows you to go to the New Information page and see only log entries that you haven't seen before, unlike the View Logs page where all log entries are always shown and it can be difficult to figure out which ones are new and which you have already seen.
+
+    +headerWithAnchor("Hostile Events", "hostileEvents")
+      p A hostile event is a recorded when a suspect goes from the classification of benign to the classification of hostile. This can be useful to see the exact time that a suspect was doing hostile activity. If the "Clear data after suspect logged as hostile?" setting is enabled under Advanced Settings, then the suspect will never actually show as hostile on the main monitoring page, but the hostile events will show all of the times that the suspect reached the hostile threshold and was reset.
+ 
+    +headerWithAnchor("View Logs", "viewLogs")
+      p The View Logs page allows you to view and/or download the Nova and Honeyd logs. The logs are ordered so that newest entries will appear on top, and the page will dynamically update if new log entries appear while you are viewing the page.
+  
+    h1.cardHeader.cardSeperator  Honeypot Configuration
+    br
+    
+    +headerWithAnchor("Haystack", "haystack")
+      p A Haystack is a collection of honeypot profiles and nodes. You can have multiple haystacks in order to easily switch between groups of honeypots when configuring or testing different setups.
+
+    +headerWithAnchor("Node", "nodes")
+      p A node is an instance of a honeyot with it's own MAC and IP address. A node's operating system and service information is inherited from the profile that the node is created from.
+
+    +headerWithAnchor("Scripts", "scripts")
+      p Scripts are the backend pieces of code that allow Honeyd to emulate various services. Under profile configuration, some scripts are configurable. These scripts allow you to choose different banners and strings used internally. This is an advanced configuration page and caution should be used, but you can edit the list of strings that can be selected from on the script configuration page.
+
+    +headerWithAnchor("Profile", "profile")
+      p A Profile is a "type" of honeypot that can be created. A node as in actual instance of a honeypot that is based off a Profile. Profiles contain all of the major settings for how the honeypot should behave, including port and service configuration, operating system emulation, and ethernet address vendors.
+  
+    +headerWithAnchor("Profile Options", "profileOptions")
+      b Profile Name
+      p This field is the human readable identifier for the Profile. Profile names must be unique.
+      
+      b Parent Profile
+      p The name of the parent of the current Profile. This field is read-only when editing a Profile. Profiles can inherit common settings from parents rather than having to set them on every single Profile. 
+      
+      b Operating System Personality
+      p This option chooses which operating system the honeypot should emulate. The honeypot will fool common signature based OS scanners such as nmap by changing the TCP/ICMP headers so that they appear to come from the chosen operating system.
+  
+      b Packet Drop Percentage
+      p You can make it appear that the honeypot is behind a bad network connection by dropping some percentage of the packets it sees.
+      
+      b Uptime
+      p Most systems will report their uptime as a TCP option field. This option is to specify how long to claim to have been running, in seconds. This can be fixed or chosen randomly from a given range. *Note: This value will increment over time while the honeypot is active.
+  
+    +headerWithAnchor("Profile Ethernet Vendor Configuration", "EthernetVendor")
+      p The first three bytes of a MAC address specify the organization that issued that MAC (usually to a hardware device). When generating nodes from a Profile, the MAC addresses will be chosen so that the prefix bytes make it appear that the device is from a certain vendor, such as Dell or Intel. Choose a list of all vendors that you may want to use when generating nodes from this Profile.
+   
+    +headerWithAnchor("Profile Broadcast Configuration", "broadcasts")
+      p Most of the honeypot scripts are passive, meaning that an attacker will only become aware of them if they are scanning the network. "broadcast scripts" are active scripts that will trigger some sort of broadcast packet at set intervals. For instance, the NBNS WBAP Query script will send an NBNS query for the WPAD proxy auto configuration name every n seconds, where n is specified in the "time" field. This is useful to draw more attention to the honeypots by making them actively send traffic to the network, but this could also make it easier to identify which IP addresses are honeypots based on their similarities between their broadcast packets. This should only be enabled on a small number of your honeypots.
+   
+    +headerWithAnchor("Profile Proxy Services", "proxies")
+      p A proxy service is a service on a honeypot that is actually running on a different machine, and proxied through the honeypot. For instance, configuring honeypot port 22 to be a proxy service for proxy IP 192.168.0.42 with proxy port 22 will make it so that all connections to port 22 on the honeypot will be redirected to 192.168.0.42. 192.168.0.42 will reply to the honeypot system, and the honeypot will then forward that reply back to the original host that tried to connect to the honeypot. From the host connecting to the honeypot, it will appear that they're just talking to a service running on the honeypot and will be entirely unaware that the service is really running on 192.168.0.42.
+  
+        p This can also allow for multi-plexing of complicated services that can't easily be emulated via the normal honeypot scripts. For example, you could have several honeypots that have proxied services on port 53 that proxy traffic to your local network's nameserver. Attackers will think each honeypot is running it's own nameserver, but really all the requests are just getting sent to your real nameserver.
+    
+    +headerWithAnchor("Profile Port Configuration", "portConfiguration")
+      p This is the main configuration section for setting up how the honeypots will respond to packets and act. You can configure the default action to take when getting TCP, UDP, and ICMP packets, as well as specific actions and services to emulate for specific ports. A portset gives you the ability to configure multiple port configurations, and then select the one you want when you create nodes based off this profile.
+  
+        p If you select "script" as the service for a port, you can choose a honeypot script to be used to emulate a service on that port, such as Telnet, FTP, etc. Under the advanced column, you may be able to choose specific banners, versions, and settings for some of the scripts in order to customize their behavior even further.
+  
+    +headerWithAnchor("Hostnames", "hostnames")
+      p The hostnames editing sections allows you to pick a set of hostnames that will be used by the honeypots. The hostnames will be used if mDNS or the Netbios Name Service scripts are used on a honeypot.
+
+    h1.cardHeader.cardSeperator  Classification Engines
+    br
+    +headerWithAnchor("Unauthorized Suspect Classification Engine", "authorizedIPs")
+      p 
+        |This is part of the configuration for the Unauthorized IPs classification engine. This engine is disabled by default, but if enabled it will mark any suspects not on a list of authorized IP addresses as hostile. In order to enable this engine, you must add an UNAUTHORIZED_SUSPECTS classifier with mode of HOSTILE_OVERRIDE and weight of 0 in the classifier settings in the 
+        a(href="/editClassifiers") Edit Classifiers
+        |  section, as well as provide a list of newline separated authorized IP addresses via a file in the 
+        a(href="/editAuthorizedIPs") Edit Authorized IP addresses
+        |  configuration section.
+    
+    
+    +headerWithAnchor("Training Data", "training")
+      p The training data is so that the KNN machine learning classifier can try to match network traffic to either past benign or past hostile traffic. You can disable or enable the inclusion of sets of training data here, and if you manually trained a suspect as hostile or benign on the main suspects monitoring page, it will show up here for inclusion or removal from the training data set that the classifier uses.
+
+
+    h1.cardHeader.cardSeperator Quasar Settings
+    br
+    +headerWithAnchor("Interface Aliases", "aliases")
+      p The interface alias section allows you to view interfaces with a human readable string instead of the Linux ethernet designator. For instance, you could call the eth0 interface "Lab Network" and the eth1 interface "Marketing Department".
+
+    +headerWithAnchor("Whitelist", "whitelist")
+      p IP addresses or address ranges in the whitelist won't show up in Nova. All packets from these addresses will be dropped before reaching the packet classifiers. This option can be dangerous and should rarely be used, because an attacker could spoof a whitelisted IP address and avoid detection. However, this feature is useful for blocking things from the broadcast address or 0.0.0.0, which you may see from things like DHCP handshakes.
+
+

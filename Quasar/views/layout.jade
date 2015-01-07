@@ -1,0 +1,334 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+doctype 5
+html(lang="en", onclick='removeContextMenu();')
+  head
+    title Quasar - Nova Web UI
+    meta(charset="utf-8")
+    link(rel="stylesheet", type="text/css", href="style.css")
+    link(rel="stylesheet", type="text/css", href="cupertino/jquery-ui-1.10.3.custom.min.css")
+
+    link(rel="shortcut icon", href="/favicon.ico")
+
+    script(type="text/javascript", src="/nowjs/now.js")
+    script(type="text/javascript", src="/scripts/knockout.js")
+    script(src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js")
+    script(src="scripts/jquery-ui-1.10.3.custom.min.js")
+
+    script.
+      // CDN fallback for jQuery
+      if (!window.jQuery) {
+        document.write('<script src="scripts/jquery.js"><\x3c/script>');
+
+        // Need to reload jquery UI too
+        document.write('<script src="scripts/jquery-ui-1.10.3.custom.min.js"><\x3c/script>');  
+      }
+     
+      // This function should be replaced in other jade files, and will be called when the DOM is ready
+      function init() {};
+
+      // This function should be replaced
+      function isNovadUpChanged(isNovadUp) {};
+
+      now.HaystackStartFailed = function()
+      {
+        alert('The haystack failed to start!');
+      }
+
+      function removeContextMenu()
+      {
+        if($('#contextMenu') != undefined)
+        {
+          $('#contextMenu').remove();
+        }
+      }
+
+      var lastNovadStatus = "unknown";
+
+      // Wrappers for now.js calls with some try/catches
+      var StartNovad = function()
+      {
+          try
+          {
+            now.StartNovad();
+          }
+          catch(err)
+          {
+            alert("Action failed because unable to connect to server! Please try refreshing the page and trying again.");
+            console.log("err was: " + err);
+          } 
+      }
+      var StopNovad = function()
+      {
+          try
+          {
+            now.StopNovad(function(result){
+              if(result == 'false')
+              {
+                now.HardStopNovad();   
+              }
+            });
+          }
+          catch(err)
+          {
+              alert("Action failed because unable to connect to server! Please try refreshing the page and trying again.");
+              console.log("err was: " + err);
+          } 
+      }
+  
+      var StartHaystack = function()
+      {
+          try
+          {
+            now.StartHaystack();
+          }
+          catch(err)
+          {
+            alert("Action failed because unable to connect to server! Please try refreshing the page and trying again.");
+            console.log("err was: " + err);
+          } 
+      }
+  
+      var StopHaystack = function()
+      {
+          try 
+          {
+            now.StopHaystack();
+          }
+          catch(err)
+          {
+            alert("Action failed because unable to connect to server! Please try refreshing the page and trying again.");
+            console.log("err was: " + err);
+          } 
+      }
+ 
+      var updateNovadStatus = function (isNovadUp){
+        if(lastNovadStatus == "unknown" || lastNovadStatus != isNovadUp) 
+        {
+          lastNovadStatus = isNovadUp;
+
+          $("#nova_status_icon_red").css('display', 'none');
+          $("#nova_status_icon_green").css('display', 'none');
+          $("#nova_status_icon_orange").css('display', 'none');
+          
+          if(isNovadUp) 
+          {
+            $("#nova_status_icon_green").css('display', 'block');
+          } 
+          else 
+          {
+            $("#nova_status_icon_red").css('display', 'block');
+          }
+
+          var ternaryLabel = isNovadUp ? "Online" : "Offline";
+          var ternarySrc = isNovadUp ? "/images/novaIconBlinking.gif" : "/images/novaIcon.png";
+          $("#nova_status").html(ternaryLabel);
+          $("#eyeIcon").attr('src', ternarySrc);
+          isNovadUpChanged(isNovadUp);
+        }
+      };
+
+      var updateHaystackStatus = function (isHaystackUp){
+        $("#haystack_status_icon_red").css('display', 'none');
+        $("#haystack_status_icon_green").css('display', 'none');
+        $("#haystack_status_icon_orange").css('display', 'none');
+        
+        if(isHaystackUp)
+        {
+          $("#haystack_status_icon_green").css('display', 'block');
+        } 
+        else
+        {
+          $("#haystack_status_icon_red").css('display', 'block');
+        }
+        
+        var ternaryLabel = isHaystackUp ? "Online" : "Offline";
+        $("#haystack_status").html(ternaryLabel);
+      };
+
+      function fixConsole(alertFallback)
+      {    
+          if(typeof console === "undefined")
+          {
+            console = {}; // define it if it doesn't exist already
+          }
+          if(typeof console.log === "undefined") 
+          {
+            if(alertFallback) { console.log = function(msg){ alert(msg); }; } 
+            else { console.log = function() {}; }
+          }
+          if(typeof console.dir === "undefined") 
+          {
+            if(alertFallback) 
+            { 
+              // THIS COULD BE IMPROVED. maybe list all the object properties?
+              console.dir = function(obj){ alert("DIR: "+obj); }; 
+            }
+            else
+            {
+              console.dir = function(){};
+             }
+          }
+      }
+    
+    block headerAdditions
+
+    script.
+      $(document).ready(function () {
+        // Some logging of nowjs stuff
+        now.core.on('disconnect', function() {console.log('Warning: Disconnected from nowjs server.');});
+        
+        var sideBarButtons = $(".sideBarButton");
+        for(var i in sideBarButtons)
+        {
+          if(!sideBarButtons[i].pathname)
+          {
+            continue;
+          }
+          if(sideBarButtons[i].pathname == window.location.pathname)
+          {
+            sideBarButtons[i].className += ' active';
+            console.log("Enabled button " + sideBarButtons[i]);
+          }
+        }
+      
+        fixConsole(false);
+
+        now.ready(function()
+        {
+          now.updateHaystackStatus = updateHaystackStatus;
+          now.updateNovadStatus = updateNovadStatus;
+          now.IsHaystackUp(updateHaystackStatus);
+          now.IsNovadConnected(updateNovadStatus);
+        
+          init();
+        });
+      });
+      
+
+  body#hook(style="background-color: #D0E9FC;")
+    //[if IE]> 
+      script(type="text/javascript").
+        alert("WARNING: Internet Explorer is not supported! Please use Chrome or Firefox to view this page.")
+      <![endif] 
+
+    // Header panel
+    div(style="height: 130px; position: absolute; top: 0; left: 0; right: 0; background-color: #D0E9FC; padding-left: 10px; padding-right: 10px; padding-top: 10px; #00008B")
+      div(style="background-color: white; padding: 4px; border-radius: 10px; border: 2px solid #769DC0; box-shadow: 0 0 2px 2px #888;")
+        a(href="/", style='text-decoration: none;')
+          img#eyeIcon(src="images/novaIcon.png",class="align-left", width="100px", height="100px")
+          h1.title DataSoft Nova Anti-reconnaissance System
+        
+        // This is so the browser will cache all 3 pics when it first loads
+        table(style="float: left; font-size: 16px;")
+          tr
+            td(style="text-align: right; font-weight: bold;") Packet Classifier:&nbsp;
+            td(style="padding: 0;")
+              img#nova_status_icon_orange(src="/images/orangedot.png", width="20px", height="20px", style="display: none;")
+              img#nova_status_icon_red(src="/images/reddot.png", width="20px", height="20px", style="display: none;")
+              img#nova_status_icon_green(src="/images/greendot.png", width="20px", height="20px", style="display: none;")
+            td
+              div#nova_status(style='font-weight: bold;')
+          tr
+            td(style="text-align: right; font-weight: bold;") Haystack&nbsp; Status:&nbsp;
+            td(style="padding: 0;")
+              img#haystack_status_icon_orange(src="/images/orangedot.png", width="20px", height="20px", style="display: none;")
+              img#haystack_status_icon_red(src="/images/reddot.png", width="20px", height="20px", style="display: none;")
+              img#haystack_status_icon_green(src="/images/greendot.png", width="20px", height="20px", style="display: none;")
+            td
+              div#haystack_status(style='font-weight: bold;')
+        table(style="float: right;")
+          tr
+            td
+              button(type="button", style="width:170px; float: right; margin-right: 4px", onclick='StartNovad()')
+                img.buttonIcon(src="images/start.png", width="15px")
+                span.buttonSpan Start Packet Classifier
+            td
+              button(type="button", style="width:170px; float: right; margin-right: 4px", onclick='StopNovad()')
+                img.buttonIcon(src="images/stop.png", width="15px")
+                span.buttonSpan Stop Packet Classifier
+          tr
+            td
+              button(type="button", style="width:170px; float: right; margin-right: 4px", onclick='StartHaystack()')
+                img.buttonIcon(src="images/start.png", width="15px")
+                span.buttonSpan Start Haystack
+            td
+              button(type="button", style="width:170px; float: right; margin-right: 4px", onclick='StopHaystack()')
+                img.buttonIcon(src="images/stop.png", width="15px")
+                span.buttonSpan Stop Haystack
+        br(style="clear: both; line-height: 0")
+    br
+
+    div(style="position: absolute; top: 150px; left: 200px; right: 10px;")
+      block content
+    
+    div(style="width: 170px; top: 142px; left: 0px; position: absolute; background-color: #D0E9FC; padding: 10px;")
+      div(style="background-color: white; padding: 4px; border-radius: 10px; border: 2px solid #769DC0; box-shadow: 0 0 2px 2px #888;")
+       block buttonPannelAdditions
+    
+       div.sideBarHeader Status
+         a.sideBarButton(href='/suspects', title='View current packet classification and analysis data')
+           img.buttonIconLeft(src="images/details2.png", width="15px")
+           span.buttonSpan Packet Classifier
+         a.sideBarButton(href='/newInformation', title="information that's changed since the last visit")
+           img.buttonIconLeft(src="images/new.png", width="15px")
+           span.buttonSpan New Information
+       
+       div.sideBarHeader Logs
+         a.sideBarButton(href='/events', title='View suspects that were logged as hostile at some point')
+           img.buttonIconLeft(src="images/skull.png", width="15px")
+           span.buttonSpan Hostile Events
+         a.sideBarButton(href="/viewNovadLog", title='View the main log file for the Nova tools')
+           img.buttonIconLeft(src="images/log.png", width="15px")
+           span.buttonSpan View Logs
+        
+       div.sideBarHeader Configuration
+         a.sideBarButton(href="/honeydConfigManage", title='Configure honeypots')
+           img.buttonIconLeft(src="images/honeycomb.png", width="15px")
+           span.buttonSpan Haystacks
+
+         a.sideBarButton(href="/basicOptions", title='Configure basic Nova options')
+           img.buttonIconLeft(src="images/gear.png", width="15px")
+           span.buttonSpan Settings
+         a.sideBarButton(href="/hostnames", title='Configure hostnames')
+           img.buttonIconLeft(src="images/hostnames.png", width="15px")
+           span.buttonSpan Hostnames
+
+         a.sideBarButton(href="/customizeTraining", title='Choose training data to use for suspect classification')
+           img.buttonIconLeft(src="images/training.png", width="15px")
+           span.buttonSpan Training
+
+         a.sideBarButton(href="/interfaceAliases", title='Give ethernet interfaces nicknames')
+           img.buttonIconLeft(src="images/alias.png", width="15px")
+           span.buttonSpan Interface Aliases
+         a.sideBarButton(href="/configWhitelist", title='Add IP addresses to the whitelist to be ignored during classification and packet analysis')
+           img.buttonIconLeft(src="images/whitelist.png", width="15px")
+           span.buttonSpan Whitelist
+    
+       div.sideBarHeader Users
+         a.sideBarButton(href="/createNewUser", title='Create a new user for the Quasar login')
+           img.buttonIconLeft(src="images/users.png", width="15px")
+           span.buttonSpan New User
+         a.sideBarButton(href="/editUsers", title='Edit users for the Quasar login')
+           img.buttonIconLeft(src="images/users.png", width="15px")
+           span.buttonSpan Edit User
+       
+       div.sideBarHeader Documentation
+         a.sideBarButton(href='/about', title='About Nova')
+           img.buttonIconLeft(src="images/about.png", width="15px")
+           span.buttonSpan About
+       

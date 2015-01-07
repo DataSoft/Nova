@@ -1,0 +1,35 @@
+#!/usr/bin/python
+
+import subprocess, os, sys
+import xml.etree.ElementTree as et
+
+if len(sys.argv) != 2:
+  print 'usage: generateIpList NMAP_TARGET'
+  sys.exit(1)
+
+target = sys.argv[1]
+root = ''
+xmlfile = ''
+
+os.system('nmap -sn -oX iplist.xml ' + target + ' >/dev/null');
+try:
+  xmlfile = et.parse('iplist.xml')
+  root = xmlfile.getroot()
+except IOError:
+  print 'could not open iplist.xml, exiting...'
+  sys.exit(1)
+
+writetofile = ''
+
+for address in root.iter('address'):
+  writetofile += address.attrib.get('addr') + '\n'
+
+os.remove('iplist.xml')
+
+filetowrite = open(os.path.expanduser('~') + '/.config/nova/config/authorizedIPs.config', 'w')
+filetowrite.write(writetofile + '\n')
+filetowrite.close()
+
+sys.exit(0)
+
+

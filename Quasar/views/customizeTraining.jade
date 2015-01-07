@@ -1,0 +1,54 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+include mixins/headers.jade
+
+extends layout
+
+block headerAdditions
+  link(rel='stylesheet', name='text/css', href='configstyle.css', media='screen')
+  style(type='text/css').
+    th {
+     background-color: #d0e9fc; 
+    }
+    
+  
+block content
+  +headerWithHelp("Choose Training Data to use when classifying suspects", "training")
+    form#trainingForm(method='post', action='/customizeTrainingSave')
+      table(border = '1')
+        thead
+          tr
+            th Include?
+            th Hostility
+            th UID
+            th Description
+        tbody
+          - for (var i = 0; i < hostiles.length; i++)
+            tr
+              td
+                - if (includedLastTime[uids[i]] == undefined || includedLastTime[uids[i]])
+                  input(type='checkbox', name='#{uids[i]}', value='1', checked)
+                - else
+                  input(type='checkbox', name='#{uids[i]}', value='1')
+              td #{hostiles[i]}
+              td #{uids[i]}
+              td #{desc[i]}
+      br
+      button.button()
+        img.buttonIcon(src='images/ok.png')
+        span.buttonSpan Save
+

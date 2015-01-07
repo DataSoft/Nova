@@ -1,0 +1,124 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-   Nova is free software: you can redistribute it and/or modify
+//-    it under the terms of the GNU General Public License as published by
+//-    the Free Software Foundation, either version 3 of the License, or
+//-    (at your option) any later version.
+//- 
+//-    Nova is distributed in the hope that it will be useful,
+//-    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-    GNU General Public License for more details.
+//- 
+//-    You should have received a copy of the GNU General Public License
+//-    along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+extends layout
+
+block content
+  h1 Currently Scheduled Events
+  br
+  table(border='1', style='border: solid 2px; background: #E8A02F; text-align: center;')
+    tbody(id='elementHook')
+      tr
+        th Event Name
+        th Schedule Type
+        th Value
+        th Message Type
+          
+block headerAdditions
+  script
+    var clients = '#{CLIENTS}'.split(':');
+    var groups = !{GROUPS};
+    var messageTypes = '#{TYPES}'.split(',');
+    var message = {};
+    message.id = '';
+    
+    function unregisterScheduledEvent(eventName)
+    {
+      now.UnsetScheduledMessage(eventName, function(bool, response){
+        if(bool == 'true')
+        {
+          document.getElementById('elementHook').removeChild(document.getElementById(eventName));
+        }
+        console.log(response);  
+      }); 
+    }
+    
+    now.RemoveEventFromList = function(remove)
+    {
+      document.getElementById('elementHook').removeChild(document.getElementById(remove));
+    }
+    
+    function generateScheduledEventElement(json)
+    {
+      var row = document.createElement('tr');
+      row.id = json.eventName;
+      
+      var td1 = document.createElement('td');
+      
+      var label0 = document.createElement('label');
+      label0.innerHTML = json.eventName;
+      
+      var td2 = document.createElement('td');
+      
+      var label2 = document.createElement('label');
+      label2.innerHTML = json.eventType;
+      
+      var td3 = document.createElement('td');
+      
+      var label3 = document.createElement('label');
+      if(json.recurring == '' && json.date != '')
+      {
+        label3.innerHTML = json.date;
+      }
+      else
+      {
+        label3.innerHTML = json.recurring; 
+      }
+
+      var td4 = document.createElement('td');
+      
+      var label4 = document.createElement('label');
+      label4.innerHTML = json.messageType;
+      
+      var td5 = document.createElement('td');
+      
+      var button = document.createElement('button');
+      button.setAttribute('onclick', 'unregisterScheduledEvent("' + json.eventName + '")');
+      button.innerHTML = 'Remove Event';
+      
+      td1.appendChild(label0);
+      td2.appendChild(label2);
+      td3.appendChild(label3);
+      td4.appendChild(label4);
+      td5.appendChild(button);
+      
+      row.appendChild(td1);
+      row.appendChild(td2);
+      row.appendChild(td3);
+      row.appendChild(td4);
+      row.appendChild(td5);
+      
+      
+      document.getElementById('elementHook').appendChild(row);
+    }
+    
+    now.ready(function(){
+      now.GetClients(now.RenderConnectionsList);
+      now.SetUpNotificationsButton();
+      now.SetUpHostileEventsButton();
+      now.GetScheduledEvents(function(json){
+        generateScheduledEventElement(json);
+      });
+      now.GetClients(function(list){
+        for(var i in list)
+        {
+          if(list[i] != '')
+          {
+            now.UpdateConnectionsList(list[i], 'updateStatus');  
+          } 
+        }
+      });
+    });

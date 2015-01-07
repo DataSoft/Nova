@@ -1,0 +1,552 @@
+//- ============================================================================
+//-  Copyright   : DataSoft Corporation 2011-2013
+//-  Nova is free software: you can redistribute it and/or modify
+//-   it under the terms of the GNU General Public License as published by
+//-   the Free Software Foundation, either version 3 of the License, or
+//-   (at your option) any later version.
+//-
+//-   Nova is distributed in the hope that it will be useful,
+//-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//-   GNU General Public License for more details.
+//-
+//-   You should have received a copy of the GNU General Public License
+//-   along with Nova.  If not, see <http://www.gnu.org/licenses/>.
+//- ============================================================================
+
+include mixins/headers.jade
+
+extends layout
+
+block content
+  div.contentBox(id="nova_suspects_error_view", style="display: none;")
+    h3(style="color: red") Warning: The Packet Classifier is either not running or not connected. The data below may be old. Try starting the Packet Classifier.
+  
+  
+  +headerWithHelp('Overview of captured network traffic', 'suspectGrid')
+    div#setup(onclick='handleOnclick(event)')
+      span#suspectTable(style="display: inline-block;")
+      p#numberOfSuspects Recieved data for 0 suspects
+    
+  br 
+  +headerWithHelp('Grid Settings', 'suspectGridSettings')
+    input#liveGridUpdate(type="checkbox", checked, onchange="LiveUpdateChanged()")
+    label Live Grid Update
+    br
+    
+    input#showAdvanced(type="checkbox", onchange="showAdvancedChanged()")
+    label Show Advanced Suspect Statistics
+    br
+    
+    input#showUnclassified(type="checkbox")
+    label Show Unclassified Suspects
+    br
+    br
+      
+    button(type="button", title="Clear all data the packet classifier has gathered", onclick='if(confirm("Are you sure you want to clear all gathered suspect data? This is irreversible.")){ClearAllSuspects(); suspectGrid.Clear()}else{return;}')
+      img.buttonIcon(src="images/erase.png")
+      span.buttonSpan Clear All Suspects
+
+    button(onclick="window.location='/novaState.csv'")
+     img.buttonIcon(src="images/save.png")
+     span.buttonSpan Save as CSV file
+  
+    br
+      
+block headerAdditions
+  link(rel="stylesheet", type="text/css", href="novagrid.css", media="screen")
+  script(type="text/javascript", src="scripts/NovaGrid.js")
+  script.
+    function cancelEvents(e) {
+      e.stopPropagation()
+    }
+ 
+    var interfaceAliases = !{JSON.stringify(interfaceAliases)};
+    var interfaces = !{JSON.stringify(interfaces)};
+    var suspectGrid;
+    var liveUpdate = true;
+
+    function handleOnclick(e)
+    {
+      return;
+      var evt = (e ? e : window.event);
+      var source = evt.target || evt.srcElement;
+      var loc = document.location.href;
+      if(loc.indexOf('/suspects') != -1)
+      {
+        removeContextMenu(); 
+      }
+    }
+
+    function isNovadUpChanged(isNovadUp)
+    {
+        $("#nova_suspects_error_view").css('display', (isNovadUp ? "none" : "block"));
+    }
+
+    var LiveUpdateChanged = function()
+    {
+      liveUpdate = $("#liveGridUpdate").is(':checked');
+    }
+
+    var toggleFilterBlock = function()
+    {
+      $('#setup').css('opacity', '0.5');
+      disableBackground($('#setup')[0]);
+    }
+
+
+    function disableBackground(source)
+    {
+      var disableUs = source.childNodes;
+      for(var i in disableUs)
+      {
+        if(typeof disableUs[i] == 'object' && disableUs[i].tagName != undefined)
+        {
+          disableUs[i].disabled = true;
+          if(disableUs[i].hasChildNodes())
+          {
+            disableBackground(disableUs[i]);
+          }
+        }
+      }
+    }
+
+    function enableBackground(source)
+    {
+      var enableUs = source.childNodes;
+      for(var i in enableUs)
+      {
+        if(typeof enableUs[i] == 'object' && enableUs[i].tagName != undefined)
+        {
+          enableUs[i].disabled = false;
+          if(enableUs[i].hasChildNodes())
+          {
+            enableBackground(enableUs[i]);
+          }
+        }
+      }
+    }
+
+    var ClearAllSuspects = function()
+    {
+      if (!lastNovadStatus) {
+        alert("Unable to clear suspects when not connected to novad");
+        return;
+      }
+      try
+      {
+        now.ClearAllSuspects();
+      }
+      catch(err)
+      {
+        alert("Action failed because unable to connect to server! Please try refreshing the page and trying again.");
+        console.log("err was: " + err);
+      } 
+    }
+    
+    function pad(num)
+    {
+        return ("0" + num.toString()).slice(-2);
+    }
+    
+    function ClearSuspect(ip, interface, idString)
+    {
+      if (!lastNovadStatus) {
+        alert("Unable to clear suspects when not connected to novad");
+        return;
+      }
+      now.ClearSuspect(ip, interface);
+      suspectGrid.DeleteRow(buildLink(ip, interface));
+    }
+
+    function SuspectDetails(ip, interface, idString)
+    {
+        var path = "/getSuspectDetails?ip=" + ip + "&interface=" + interface;
+        window.open(path);
+    }
+
+    function buildLink(ip, interface)
+    {
+      var res = "<div style='display: none;'>" + interface + "</div><div'>" + ip + "</div>";
+      return res;
+    }
+
+    var OnNewSuspect = function(suspect){
+      var d = new Date(suspect.lastTime*1000);
+      var dString = pad(d.getMonth() + 1) + "/" + pad(d.getDate()) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+      
+      var row = new Array();
+        
+      var ip = suspect.ip;
+    
+      var suspectLink = buildLink(ip, suspect.interface);
+
+      var imgSrc;
+      if(suspect.isHostile)
+      {
+        imgSrc = "images/alert.png";
+      } 
+      else
+      {
+        imgSrc = "images/benign.png";
+      }
+
+      row.push("<img src='" + imgSrc + "' class='buttonIcon'/>");
+
+      // Convert the interface to an interface alias if we have one
+      var iface = suspect.interface;
+      var interfaceIndex = interfaces.indexOf(suspect.interface);
+      if (interfaceIndex != -1) {
+        iface = interfaceAliases[interfaceIndex];
+      }
+      row.push(String(iface));
+
+      row.push(String(suspectLink));
+      row.push(suspect.classification);
+      row.push(String(dString));
+
+      row.push(suspect.ip_traffic_distribution);
+      row.push(suspect.port_traffic_distribution);
+      row.push(suspect.packet_size_mean);
+      row.push(suspect.packet_size_deviation);
+      row.push(suspect.distinct_ips);
+      row.push(suspect.distinct_tcp_ports);
+      row.push(suspect.distinct_udp_ports);
+      row.push(suspect.avg_tcp_ports_per_host);
+      row.push(suspect.avg_udp_ports_per_host);
+      row.push(suspect.tcp_percent_syn);
+      row.push(suspect.tcp_percent_fin);
+      row.push(suspect.tcp_percent_rst);
+      row.push(suspect.tcp_percent_synack);
+      row.push(suspect.haystack_percent_contacted);
+       
+      suspectGrid.PushEntry(row);
+
+    };
+
+    function showAdvancedChanged()
+    {
+        if($('#showAdvanced').is(':checked'))
+        {
+            for(var i = 5; i < suspectGrid.m_columns.length; i++)
+            {
+                suspectGrid.m_columns[i].isDisabled = false;
+            }
+        } 
+        else 
+        {
+            for(var i = 5; i < suspectGrid.m_columns.length; i++)
+            {
+                suspectGrid.m_columns[i].isDisabled = true;
+            }
+            
+        }
+
+        suspectGrid.GenerateTableHeader();
+        suspectGrid.Render();
+    }
+              
+    function featureFormatter(d)
+    {
+        var num = new Number(d);
+        return (num.toFixed(2));
+    }
+
+    function classificationFormatter(d)
+    {
+        if(d === null)
+        {
+            return "NULL";
+        }
+        else if(d == -1)
+        {
+            return "Invalid";
+        }
+        else if(d == -2)
+        {
+            return "Not Enough Data";
+        }
+        else if(d >= 0 && d <= 1)
+        {
+            var num = 100 * d;
+            return '<div class="classification_entry"><div style="width: ' + num.toFixed(0) + '%" class="progressBar">&nbsp;</div><div class="progressText">' + num.toFixed(2) + '</div></div>';
+        }
+        else
+        {
+            return "Error (" + d + ")";
+        }
+    }
+
+    function Init()
+    {
+        // This stops the event in the grid so that the layout.jade onclick handler doesn't remove the contextmenu
+        document.getElementById("suspectTable").onclick = cancelEvents;
+       
+        var gridStructure = [];
+        gridStructure.push({name: "Hostility", isDisabled: false, noEscape: true});
+        gridStructure.push({name: "Interface", isDisabled: false});
+        gridStructure.push({name: "Address", isDisabled: false, noEscape: true});
+        gridStructure.push({name: "Classification", isDisabled: false, formatter: classificationFormatter});
+        gridStructure.push({name: "Last Seen", isDisabled: false});
+   
+        var featureNames = String("#{featureNames}").split(",");
+        for(var i = 0; i < featureNames.length; i++)
+        {
+            gridStructure.push({name:featureNames[i], isDisabled: true, formatter: featureFormatter});
+        }
+   
+        suspectGrid = new NovaGrid(gridStructure, 2, $('#suspectTable')[0], 'suspectGrid', false);
+        suspectGrid.m_remotePaging = true;
+        
+        suspectGrid.SetRightClickEventListener("replacementContextMenu(event);");
+    
+        // Sort by classification by default
+        suspectGrid.SetSortByKey(3);
+        suspectGrid.SetRowsPerPage(20);
+
+
+        suspectGrid.m_autoRenderCallback = function() {
+            querySuspects();
+            
+        };
+
+        var renderSuspects = function(){
+            if(!liveUpdate) {return;}
+           
+            var start = new Date().getTime();
+            suspectGrid.Render(); 
+            //console.log("Time to render grid of size " + suspectGrid.Size() + ": " + (new Date().getTime() - start) + "ms");
+        };
+       
+        querySuspects();
+        setInterval(querySuspects, 3000);
+    
+    function querySuspects() {
+        if(!liveUpdate) {return;}
+        var rows = suspectGrid.m_rowsPerPage;
+        var offset = suspectGrid.m_currentPage * suspectGrid.m_rowsPerPage;
+        var sortOrder = suspectGrid.m_sortDescending ? "DESC" : "ASC";
+        var showUnclassified = $("#showUnclassified").prop("checked");
+
+        // Translate the grid column index to the actual SQL column name we want to sort by
+        var sortBy = "classification";
+        switch(suspectGrid.m_sortByKey) {
+            case 3: sortBy = "classification"; break;
+            case 4: sortBy = "lastTime"; break;
+            case 5: sortBy = "ip_traffic_distribution"; break;
+            case 6: sortBy = "port_traffic_distribution"; break;
+            case 7: sortBy = "packet_size_mean"; break;
+            case 8: sortBy = "packet_size_deviation"; break;
+            case 9: sortBy = "distinct_ips"; break;
+            case 10: sortBy = "distinct_tcp_ports"; break;
+            case 11: sortBy = "distinct_udp_ports"; break;
+            case 12: sortBy = "avg_tcp_ports_per_host"; break;
+            case 13: sortBy = "avg_udp_ports_per_host"; break;
+            case 14: sortBy = "tcp_percent_syn"; break;
+            case 15: sortBy = "tcp_percent_fin"; break;
+            case 16: sortBy = "tcp_percent_rst"; break;
+            case 17: sortBy = "tcp_percent_synack"; break;
+            case 18: sortBy = "haystack_percent_contacted"; break;
+        }
+  
+        now.GetNumberOfSuspects(showUnclassified, function(err, res) {
+            if (err) {return;}
+
+            suspectGrid.m_numberOfPages = Math.ceil(res[0].count/suspectGrid.m_rowsPerPage);
+            $('#numberOfSuspects').text("Recieved data for " + res[0].count + " suspects");
+        });
+
+        now.GetSuspects(rows, offset, sortBy, sortOrder, showUnclassified, parseSuspects);
+    }
+
+    function parseSuspects(err, suspects) {
+        if (err) {
+            alert(err);
+            return;
+        }
+        
+        suspectGrid.Clear();
+        console.log("Got " + suspects.length + " suspects.");
+        for (var s in suspects) {
+            OnNewSuspect(suspects[s]);
+        }
+        renderSuspects();
+    }
+    }
+
+
+    function replacementContextMenu(e)
+    {
+      if($('#contextMenu')[0] != undefined)
+      {
+        $('#contextMenu').remove();
+      }
+      
+      var evt = (e ? e : window.event);
+      var source = evt.target || evt.srcElement;
+      
+      if(source.tagName == 'DIV')
+      {
+        if(source.getAttribute('class') != null && source.getAttribute('class').indexOf('progress') != -1)
+        {
+          source = source.parentNode;
+        }
+        else if(source.parentNode.tagName == 'TD')
+        {
+          
+        } 
+      }
+      else if(source.tagName != 'TD' && source.parentNode.tagName != 'TD')
+      {
+        evt.returnValue = false || evt.preventDefault();
+        return false;
+      }
+      
+      if(source.tagName == 'TD')
+      {
+        source = source.parentNode;
+      }
+      else if(source.parentNode.tagName == 'TD')
+      {
+        source = source.parentNode;
+        source = source.parentNode;
+      }
+      
+      var ip = source.childNodes[2].childNodes[1].innerHTML;
+      var iface = source.childNodes[2].childNodes[0].innerHTML;
+      
+      function trim(string)
+      {
+        var ret = string;
+        if(string[0] == ' ')
+        {
+          ret = ret.substr(1);
+        }
+        if(string[string.length] == ' ')
+        {
+          ret = ret.substr(0, string.length - 1);
+        }
+        return ret;
+      }
+      
+      ip = trim(ip);
+      iface = trim(iface);
+      
+      function getFeatureSetOf(ip)
+      {
+        var iter = suspectGrid.GetElements();
+        var ret = '';
+        var check = '';
+        
+        for(var i in iter)
+        {
+          check = i;
+          check = check.substring(0, i.lastIndexOf("<"));
+          check = check.substring(check.lastIndexOf(">") + 1);
+          if(check == ip)
+          {
+            ret = iter[i][5];
+            for(var j = 6; j < 19; j++)
+            {
+              ret += ' ' + iter[i][j];
+            }
+          }
+        }
+        return ret;
+      }
+
+      var features = getFeatureSetOf(ip);
+      
+      var clickX = 0;
+      var clickY = 0;
+      if((evt.clientX || evt.clientY) &&
+        document.body &&
+        document.body.scrollLeft != null) 
+      {
+        clickX = evt.clientX + document.body.scrollLeft;
+        clickY = evt.clientY + document.body.scrollTop;
+      }
+      
+      if((evt.clientX || evt.clientY) &&
+         document.compatMode == 'CSS1Compat' && 
+         document.documentElement && 
+         document.documentElement.scrollLeft != null) 
+      {
+        clickX = evt.clientX + document.documentElement.scrollLeft;
+        clickY = evt.clientY + document.documentElement.scrollTop;
+      }
+      
+      if(evt.pageX || evt.pageY) 
+      {
+        clickX = evt.pageX;
+        clickY = evt.pageY;
+      }
+
+
+      var contextMenuDiv = document.createElement('div');
+      contextMenuDiv.setAttribute('style', 'border-radius: 5px; box-shadow: 0 0 5px #AAA; width: 250px; z-index: 1002; position: absolute; top: ' + clickY + 'px; left:' + clickX + 'px; opacity: 1;');
+      contextMenuDiv.id = 'contextMenu';
+      
+      var details = document.createElement('div');
+      details.setAttribute('class', 'topcontainer');
+      details.innerHTML = '<img class="buttonIcon" src="images/details.png"/> Detailed Report ' + ip;
+      details.setAttribute('onclick', 'SuspectDetails("' + ip + '", "' + iface + '")');
+      details.setAttribute('oncontextmenu', 'SuspectDetails("' + ip + '", "' + iface + '"); removeContextMenu(); return false;');
+      contextMenuDiv.appendChild(details);
+     
+      var markAsHostile = document.createElement('div');
+      markAsHostile.setAttribute('class', 'middlecontainer');
+      markAsHostile.innerHTML = '<img class="buttonIcon" src="images/alert.png"/> Train ' + ip + ' as Hostile';
+      markAsHostile.setAttribute('onclick', 'if(confirm("This will train the classification engine to match all suspects looking like this one as hostile. Are you sure you want to do this?")){now.addTrainingPoint("' + ip + '", "' + iface + '", "' + features + '", "1" , addedCb)}');
+      markAsHostile.setAttribute('oncontextmenu', 'if(confirm("This will train the classification engine to match all suspects looking like this one as hostile. Are you sure you want to do this?")){now.addTrainingPoint("' + ip + '", "' + iface + '", "' + features + '", "1" , addedCb)}; removeContextMenu(); return false;');
+      contextMenuDiv.appendChild(markAsHostile);
+      
+      var markAsBenign = document.createElement('div');
+      markAsBenign.setAttribute('class', 'middlecontainer');
+      markAsBenign.innerHTML = '<img class="buttonIcon" src="images/benign.png"/> Train ' + ip + ' as Benign';
+      markAsBenign.setAttribute('onclick', 'if(confirm("This will train the classification engine to match all suspects looking like this one as benign. Are you sure you want to do this?")){now.addTrainingPoint("' + ip + '", "' + iface + '", "' + features + '", "0" , addedCb)}');
+      markAsBenign.setAttribute('oncontextmenu', 'if(confirm("This will train the classification engine to match all suspects looking like this one as benign. Are you sure you want to do this?")){now.addTrainingPoint("' + ip + '", "' + iface + '", "' + features + '", "0" , addedCb)}; removeContextMenu(); return false;');
+      contextMenuDiv.appendChild(markAsBenign);
+
+      var clearSuspect = document.createElement('div');
+      clearSuspect.setAttribute('class', 'bottomcontainer');
+      clearSuspect.innerHTML = '<img src="images/erase.png" class="buttonIcon"/>Clear Suspect ' + ip;
+      clearSuspect.setAttribute('onclick', 'ClearSuspect("' + ip + '", "' + iface + '")');
+      clearSuspect.setAttribute('oncontextmenu', 'ClearSuspect("' + ip + '", "' + iface + '"); removeContextMenu(); return false;');
+      contextMenuDiv.appendChild(clearSuspect);
+      
+      document.getElementById('hook').appendChild(contextMenuDiv);
+      evt.returnValue = false || evt.preventDefault();
+      return false;
+    }
+
+    function addedCb(err) 
+    {
+      if(err) 
+      {
+          alert("There was and error adding the new training point: " + err);
+      } 
+      else 
+      {
+          alert("Added suspect point to training data");
+      }
+    }
+
+    function init()
+    {
+        var initialized = false;
+        now.ready(function()
+        {
+            if (!initialized)
+            {
+                initialized = true;
+                now.updateHaystackStatus = updateHaystackStatus;
+                now.updateNovadStatus = updateNovadStatus;
+                now.IsHaystackUp(updateHaystackStatus);
+                now.IsNovadConnected(updateNovadStatus);
+
+                Init();
+            }
+        });
+    };
+

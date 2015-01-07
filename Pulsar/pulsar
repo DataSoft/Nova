@@ -1,0 +1,23 @@
+#!/bin/bash
+
+SHARED_PATH="/usr/share/nova/sharedFiles"
+MAIN_PATH="$SHARED_PATH/Pulsar/main.js"
+MODULE_PATH="$SHARED_PATH/NodejsModule"
+
+cd "$SHARED_PATH/Pulsar"
+
+if (($# == 1)); then
+        if [[ "$1" == "--debug" ]] || [[ "$1" == "-d" ]]; then
+                echo "Debug mode: Running pulsar without forever"
+                NODE_PATH="$MODULE_PATH" node $MAIN_PATH
+                exit
+        else
+                echo "Unknown argument. Usage: pulsar [-d (--debug)]"
+                echo "  -d (--debug) Run node directly and show output in stdout instead of using forever to daemonize."
+                exit
+        fi
+fi
+
+echo "Starting pulsar with the forever daemon"
+NODE_PATH="$MODULE_PATH" forever start $MAIN_PATH
+exit

@@ -1,0 +1,4 @@
+[submodule "Installer/userFiles/config/training"]
+	path = Installer/userFiles/config/training
+	url = git://github.com/DataSoft/NovaData.git
+

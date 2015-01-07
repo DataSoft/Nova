@@ -1,0 +1,20 @@
+mixin headerWithHelp(title, helpAnchor)
+  div.cardContainer(attributes)
+    h3.cardHeader
+      span #{title}
+      a(href="help##{helpAnchor}", target="_blank")
+        img.helpIcon(src="/images/about.png", style="float: right;")
+    div.cardOuter
+      block
+
+mixin header(title)
+  div.cardContainer(attributes, style="display: inline-block; vertical-align: top;")
+    h3.cardHeader #{title}
+    div.cardOuter(style="display: block")
+      block
+
+mixin headerWithAnchor(title, anchor)
+  h3.cardHeader
+    a(name="#{anchor}") #{title}
+  div.cardOuter
+    block

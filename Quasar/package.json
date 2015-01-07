@@ -1,0 +1,17 @@
+{
+	"name" : "nova"
+	, "version" : "0.1.0"
+	, "author"	: "Datasoft"
+	, "dependencies" : {
+		"express" 		: 	"3.2.x"
+		, "now"			:	"0.8.x"
+		, "jade"		:	"0.33.x"
+		, "socket.io"	:	"0.9.x"
+		, "passport"	:	"0.1.x"
+		, "passport-http"	:	"0.2.x"
+		, "sqlite3" : "2.1.7"
+		, "validator" : "1.1.x"
+		, "websocket" : "1.0.x"
+		, "sudo" : "1.0.x"
+	}
+}

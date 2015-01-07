@@ -1,0 +1,9 @@
+#!/bin/bash
+
+SCRIPT="novasendmail"
+
+if [ "`crontab -l | grep $SCRIPT`" \> " " ]; then
+	CT="$(set -f; crontab -l | grep $SCRIPT)"
+	CTESC=$(sed 's/[\*\.&/]/\\&/g' <<<"$CT")
+	crontab -l | sed "/$CTESC/d" | (crontab)
+fi
