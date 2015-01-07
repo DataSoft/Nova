@@ -565,6 +565,12 @@ configuration variable set to 1, as well as properly configuring the
 MASTER_UI_IP and MASTER_UI_CLIENT_ID variables to match the location and
 naming requirements for the user's network. 
 
+===============================
+Ceres
+===============================
+
+    Warning: Ceres was a prototype for allowing remote access to Nova 
+    information via an Android application. It is no longer supported.
 
 =============================== 
 Contact us 
