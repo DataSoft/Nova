@@ -40,9 +40,7 @@ echo "##########################################################################
 cd ${BUILDDIR}
 rm -fr Honeyd
 rm -fr Nova
-# TODO: Going to have to get rid of these soon, point them to
-# git clone http://axiom/gerrit/Nova
-# axiom is 192.168.11.149
+
 git clone git://github.com/DataSoft/Honeyd.git
 check_err
 git clone git://github.com/DataSoft/Nova.git
