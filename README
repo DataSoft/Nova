@@ -98,13 +98,6 @@ Getting the newest code manually
 
     git clone git://github.com/DataSoft/Honeyd.git    
     git clone git://github.com/DataSoft/Nova.git Nova
-    
-    # You also need to get the git submodules where training data is stored
-    # in it's own repo
-   
-    cd Nova 
-    git submodule init
-    git submodule update
 
 - This will create a "honeyd" and "Nova" folder with the source located inside.
   From this point on they will be referred to as $HONEYD_SOURCE and
