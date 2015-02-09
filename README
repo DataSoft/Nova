@@ -73,7 +73,7 @@ Automatic Installation Script
 ===============================
 
 - The first thing to note is that Nova is currently only compatible with Linux.
-  All of our development is done on Ubuntu 12.04+, so we suggest using that to
+  All of our development is done on Ubuntu 12.04 (64 bit), so we suggest using that to
   make installation easiest. We provide a helper script which should get all
   dependencies and download, build, and install Nova and Honeyd. 
 
