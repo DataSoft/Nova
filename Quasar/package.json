@@ -10,7 +10,7 @@
 		, "passport"	:	"0.1.x"
 		, "passport-http"	:	"0.2.x"
 		, "sqlite3" : "2.1.7"
-		, "validator" : "1.1.x"
+		, "validator" : "13.1.x"
 		, "websocket" : "1.0.x"
 		, "sudo" : "1.0.x"
 	}
